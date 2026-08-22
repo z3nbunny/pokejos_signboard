@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // <-- This is the missing piece!
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDTFFkxO08KChxLAhZiYT6xJeIbX4H0Vfs",
@@ -11,8 +11,8 @@ const firebaseConfig = {
     measurementId: "G-RC2KH6ZRHK"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase AND explicitly export the app
+export const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore and EXPORT it so the carousel can read the data
 export const db = getFirestore(app);

@@ -1,31 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../firebase'; // Import your initialized database instance
+import { db } from '../firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 
-const VISIBLE_COUNT = 3;
-
-export default function MerchCarousel() {
+export default function MerchCarousel({ isFeature, activeLocation }) {
     const [slides, setSlides] = useState([]);
     const [offset, setOffset] = useState(0);
 
-    // 1. Listen to Firestore in Real Time
     useEffect(() => {
-        const q = query(collection(db, "merchSlides"));
+        setSlides([]);
+        setOffset(0);
 
-        // Establishing the real-time persistent data socket
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const liveData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setSlides(liveData);
-        });
+        const slidesQuery = query(
+            collection(
+                db,
+                'locations',
+                activeLocation,
+                'merchSlides'
+            )
+        );
 
-        return () => unsubscribe(); // Clean up socket on component unmount
-    }, []);
+        const unsubscribe = onSnapshot(
+            slidesQuery,
+            (snapshot) => {
+                const liveData = snapshot.docs.map(
+                    (document) => ({
+                        id: document.id,
+                        ...document.data()
+                    })
+                );
 
-    // 2. Drive the conveyor rotation interval
+                setSlides(liveData);
+            }
+        );
+
+        return () => unsubscribe();
+    }, [activeLocation]);
+
     useEffect(() => {
         if (slides.length === 0) return;
         const timer = setInterval(() => {
@@ -42,8 +53,9 @@ export default function MerchCarousel() {
         );
     }
 
-    // Calculate the rolling window array
-    const visibleSlides = Array.from({ length: VISIBLE_COUNT }).map((_, i) => {
+    const visibleCount = isFeature ? 2 : 3;
+
+    const visibleSlides = Array.from({ length: visibleCount }).map((_, i) => {
         const slideIndex = (offset + i) % slides.length;
         return {
             ...slides[slideIndex],
@@ -52,8 +64,7 @@ export default function MerchCarousel() {
     });
 
     return (
-        // Added a slightly wider gap-[2vw] to spread the squares out beautifully
-        <div className="relative w-full h-full overflow-hidden flex items-center justify-center gap-[2vw] p-[1vw]">
+        <div className={`relative w-full h-full overflow-hidden flex items-center justify-center gap-[1vw] ${isFeature ? 'pb-[2vh]' : 'py-[1.5vh]'}`}>
             <AnimatePresence mode="popLayout">
                 {visibleSlides.map((slide) => (
                     <motion.div
@@ -63,22 +74,28 @@ export default function MerchCarousel() {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -100, scale: 0.9 }}
                         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                        // Swapped h-full for aspect-square. Added bg-white in case your shirts are transparent PNGs
-                        className="w-[32%] aspect-square relative overflow-hidden rounded-[1vw] border border-black/10 shrink-0 shadow-2xl bg-white"
+                        className={`${isFeature ? 'w-[48%]' : 'w-[32%]'} h-full flex flex-col relative overflow-hidden rounded-[1vw] border border-black/10 shrink-0 bg-black`}
                     >
-                        {/* The image fills the perfect square */}
-                        <img
-                            src={slide.imageUrl || slide.image}
-                            alt={slide.title}
-                            className="w-full h-full object-cover"
-                        />
+                        {/* 1. The Image Wrapper: Now flexes to take ONLY the remaining space */}
+                        <div className="flex-1 w-full bg-white relative">
+                            <img
+                                src={slide.imageUrl || slide.image}
+                                alt={slide.title}
+                                /* absolute inset-0 forces the image to respect the flexible boundaries */
+                                className="absolute inset-0 w-full h-full object-contain p-[1vw]"
+                            />
+                        </div>
 
-                        {/* Translucent Grey Overlay pinned to the bottom */}
-                        <div className="absolute bottom-0 left-0 w-full py-[1.5vh] px-[1vw] flex flex-col items-center justify-center bg-zinc-800/85 backdrop-blur-sm border-t border-white/10">
-                            <h4 className="text-[0.7vw] tracking-[0.2em] text-[#f59e0b] uppercase font-bold mb-[0.5vh] line-clamp-1 text-center">
+                        {/* 2. The Text Box: shrink-0 guarantees it never gets squished or pushed off the edge */}
+                        <div className="w-full shrink-0 py-[1.5vh] px-[1vw] flex flex-col items-center justify-center bg-black border-t border-white/20">
+
+                            <h4 className="text-[1.4vw] tracking-[0.2em] text-white/60 uppercase font-bold line-clamp-1 text-center">
                                 {slide.subtitle}
                             </h4>
-                            <h2 className="text-[1.4vw] font-black text-white tracking-tight leading-none line-clamp-2 text-center drop-shadow-md">
+
+                            <div className="w-[15vw] h-[0.5vh] bg-white/20 my-[1vh]"></div>
+
+                            <h2 className="text-[1.6vw] font-black text-white tracking-tight leading-none line-clamp-2 text-center pb-[0.5vh]">
                                 {slide.title}
                             </h2>
                         </div>

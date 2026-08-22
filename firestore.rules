@@ -1,0 +1,371 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- AUTHORIZATION HELPERS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn()
+        && getUserData().role == 'super_admin';
+    }
+
+    function isLocationAdmin(locationId) {
+      return isSignedIn()
+        && getUserData().role == 'location_admin'
+        && getUserData().locationId == locationId;
+    }
+
+    function canManageLocation(locationId) {
+      return isSuperAdmin()
+        || isLocationAdmin(locationId);
+    }
+
+    function isSupportedMenu(menuId) {
+          return menuId in [
+            'meat',
+            'sides'
+          ];
+        }
+
+    function isPairedTv(locationId, deviceId) {
+          return isSignedIn()
+            && request.auth.token.firebase.sign_in_provider == 'anonymous'
+            && get(
+              /databases/$(database)/documents/locations/$(locationId)/devices/$(deviceId)
+            ).data.authUid == request.auth.uid;
+        }
+
+    // --- USER PROFILES ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn()
+        && (
+          request.auth.uid == userId
+          || isSuperAdmin()
+        );
+
+      allow list: if isSuperAdmin();
+
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+
+    // --- DEVICE PAIRING REQUESTS ---
+
+    match /devicePairingRequests/{authUid} {
+      // An anonymous TV may create one request for its own UID.
+      allow create: if isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && request.auth.uid == authUid
+        && request.resource.data.keys().hasOnly([
+          'authUid',
+          'locationId',
+          'deviceId',
+          'pairingCode',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.locationId in [
+          'brodie',
+          'parmer',
+          'round_rock'
+        ]
+        && request.resource.data.deviceId is string
+        && request.resource.data.deviceId.matches(
+          '^[a-z0-9_-]{1,40}$'
+        )
+        && request.resource.data.pairingCode is string
+        && request.resource.data.pairingCode.matches(
+          '^[0-9]{6}$'
+        )
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+
+      // TVs may retrieve only their own request.
+      allow get: if (
+          isSignedIn()
+          && request.auth.uid == authUid
+        )
+        || isSuperAdmin();
+
+      allow list: if isSuperAdmin();
+
+      // Approval and rejection are one-time transitions.
+      allow update: if isSuperAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'status',
+            'reviewedAt',
+            'reviewedBy'
+          ])
+        && request.resource.data.status in [
+          'approved',
+          'rejected'
+        ]
+        && request.resource.data.reviewedAt == request.time
+        && request.resource.data.reviewedBy
+          == request.auth.uid;
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- GLOBAL RESTAURANT MENUS ---
+
+        // Published menu data is shared by every location and
+        // readable by the public display clients.
+        match /globalMenus/{menuId} {
+          allow read: if isSupportedMenu(menuId);
+
+      // Only super admins may change the canonical menu.
+      allow create, update, delete:
+        if isSuperAdmin()
+        && isSupportedMenu(menuId);
+        }
+
+
+        // Drafts are never exposed to public displays or
+        // location administrators.
+        match /globalMenuDrafts/{menuId} {
+          allow read, create, update, delete:
+            if isSuperAdmin()
+            && isSupportedMenu(menuId);
+        }
+
+
+    // Each revision stores an immutable menu snapshot.
+    // Application logic will prevent normal editing of old
+    // revisions, while super admins retain recovery access.
+    match /globalMenuRevisions/{menuId}/versions/{revisionId} {
+      allow read, create, update, delete:
+        if isSuperAdmin()
+        && isSupportedMenu(menuId);
+    }
+
+
+    // Global Spotlights may appear at every restaurant or
+    // contain an optional list of targeted locations.
+    match /globalMenuSpotlights/{menuId}/items/{spotlightId} {
+      allow read: if isSupportedMenu(menuId);
+
+      allow create, update, delete:
+        if isSuperAdmin()
+        && isSupportedMenu(menuId);
+    }
+
+
+    // --- PUBLIC TV DISPLAY CONTENT ---
+
+    // Only this specific settings document is public.
+    match /locations/{locationId}/settings/display {
+      allow read: if true;
+
+      allow create, update, delete:
+        if canManageLocation(locationId);
+    }
+
+    match /locations/{locationId}/schedules/{scheduleId} {
+      allow read: if true;
+
+      allow create, update, delete:
+        if canManageLocation(locationId);
+    }
+
+    match /locations/{locationId}/campaigns/{campaignId} {
+      allow read: if true;
+
+      allow create, update, delete:
+        if canManageLocation(locationId);
+    }
+
+    match /locations/{locationId}/merchSlides/{slideId} {
+      allow read: if true;
+
+      allow create, update, delete:
+        if canManageLocation(locationId);
+    }
+
+    match /locations/{locationId}/infoCards/{cardId} {
+      allow read: if true;
+
+      allow create, update, delete:
+        if canManageLocation(locationId);
+    }
+
+    // --- LOCATION MENU AVAILABILITY ---
+
+    match /locations/{locationId}/menuAvailability/{menuId} {
+
+      function isValidAvailabilityWrite() {
+        return isSignedIn()
+          && isSupportedMenu(menuId)
+          && request.resource.data.keys().hasOnly([
+            'soldOutItemIds',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.keys().hasAll([
+            'soldOutItemIds',
+            'updatedAt',
+            'updatedBy'
+          ])
+          && request.resource.data.soldOutItemIds is list
+          && request.resource.data.soldOutItemIds.size() <= 200
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy
+            == request.auth.uid;
+      }
+
+      // Displays need the sold-out list for their location.
+      allow read: if isSupportedMenu(menuId);
+
+      // Super admins may manage every restaurant.
+      // Location admins may manage only their restaurant.
+      allow create, update:
+        if canManageLocation(locationId)
+        && isValidAvailabilityWrite();
+
+      // Clearing the list should be an update to an empty
+      // array. Only super admins may delete the document.
+      allow delete: if isSuperAdmin()
+        && isSupportedMenu(menuId);
+    }
+
+    // --- LOCATION MENU SPOTLIGHTS ---
+
+    match /locations/{locationId}/menuSpotlights/{menuId}/items/{spotlightId} {
+
+      // Displays can read active local Spotlights.
+      allow read: if isSupportedMenu(menuId);
+
+      // Super admins may manage any location.
+      // Location admins may manage only their own location.
+      allow create, update, delete:
+        if canManageLocation(locationId)
+        && isSupportedMenu(menuId);
+    }
+
+
+    // --- DEVICE SCREENSHOTS ---
+
+    match /locations/{locationId}/deviceScreenshots/{deviceId} {
+
+      function isValidScreenshot() {
+        return request.resource.data.keys().hasOnly([
+            'image',
+            'capturedAt'
+          ])
+          && request.resource.data.image is string
+          && request.resource.data.image.size() <= 750000
+          && request.resource.data.capturedAt == request.time;
+      }
+
+      // Telemetry is currently available only to super admins.
+      allow get, list: if isSuperAdmin();
+
+      // A paired TV may write only its own validated screenshot.
+      allow create, update: if isPairedTv(
+          locationId,
+          deviceId
+        )
+        && isValidScreenshot();
+
+      // Super admins can remove obsolete screenshots.
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- AUTHENTICATED DEVICE RECORDS ---
+
+    match /locations/{locationId}/devices/{deviceId} {
+
+      function isPairedDevice() {
+        return isSignedIn()
+          && request.auth.token.firebase.sign_in_provider
+            == 'anonymous'
+          && resource.data.authUid == request.auth.uid;
+      }
+
+      function isValidDeviceUpdate() {
+        let changedFields = request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+
+        return isPairedDevice()
+
+          // A TV cannot change its identity or configuration.
+          && request.resource.data.authUid
+            == resource.data.authUid
+
+          // A TV may modify only operational fields.
+          && changedFields.hasOnly([
+            'lastSeen',
+            'currentUrl',
+            'pendingCommand'
+          ])
+
+          // Heartbeats must use a server timestamp.
+          && (
+            !changedFields.hasAny(['lastSeen'])
+            || request.resource.data.lastSeen == request.time
+          )
+
+          // Prevent unexpectedly large or invalid URLs.
+          && (
+            !changedFields.hasAny(['currentUrl'])
+            || (
+              request.resource.data.currentUrl is string
+              && request.resource.data.currentUrl.size() <= 500
+            )
+          )
+
+          // A TV may acknowledge a command but cannot issue one.
+          && (
+            !changedFields.hasAny(['pendingCommand'])
+            || request.resource.data.pendingCommand == null
+            || request.resource.data.pendingCommand == 'NONE'
+          );
+      }
+
+      // A paired TV can retrieve only its own document.
+      // Location admins can retrieve devices at their location.
+      // Super admins can retrieve any device.
+      allow get: if isPairedDevice()
+        || isSuperAdmin()
+        || isLocationAdmin(locationId);
+
+      // TVs cannot query or enumerate device collections.
+      allow list: if isSuperAdmin()
+        || isLocationAdmin(locationId);
+
+      // Device documents are created during super-admin approval.
+      allow create: if isSuperAdmin();
+
+      // TVs get a narrow telemetry/acknowledgment path.
+      // Super admins retain provisioning and command control.
+      allow update: if isValidDeviceUpdate()
+        || isSuperAdmin();
+
+      allow delete: if isSuperAdmin();
+    }
+
+
+    // Required for the super-admin collection-group query.
+    match /{path=**}/devices/{deviceId} {
+      allow read: if isSuperAdmin();
+    }
+  }
+}

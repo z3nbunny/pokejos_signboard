@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+/* 1. Setup manual dark mode class variant for v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 2. Define our base (Light Mode) colors as Theme Variables */
+@theme {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
+    --color-accent-light: #eff6ff;
+    --color-border: #e2e8f0;
+    --color-danger: #ef4444;
+}
+
+/* 3. Override those exact variables when the "dark" class is active */
+@layer theme {
+    .dark {
+        --color-bg: #020617;
+        --color-surface: #0f172a;
+        --color-text-primary: #f8fafc;
+        --color-text-secondary: #94a3b8;
+        --color-accent: #3b82f6;
+        --color-accent-hover: #60a5fa;
+        --color-accent-light: #1e293b;
+        --color-border: #1e293b;
+        --color-danger: #f87171;
+    }
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    transition-property: color, background-color;
+    transition-duration: 300ms;
+}
