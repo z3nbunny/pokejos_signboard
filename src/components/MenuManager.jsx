@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { MEAT_MENU_SEED } from '../data/meatMenuSeed';
 
 const DEFAULT_MEAT_AVAILABLE_ON = [

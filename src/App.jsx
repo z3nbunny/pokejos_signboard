@@ -6,8 +6,7 @@ import BottomCards from './components/BottomCards';
 import EventMode from './components/EventMode';
 import { db } from './firebase';
 import { doc, collection, onSnapshot } from 'firebase/firestore';
-
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuth';
 import {
   getAuth,
   signInAnonymously,

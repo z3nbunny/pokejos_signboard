@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, onSnapshot, getDoc, setDoc, collection, addDoc, deleteDoc } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import FleetDashboard from './FleetDashboard';
 import MenuManager from './MenuManager';
 import DevicePairingManager from './DevicePairingManager';
