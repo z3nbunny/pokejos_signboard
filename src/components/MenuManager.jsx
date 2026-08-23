@@ -1220,7 +1220,6 @@ export default function MenuManager() {
 
     useEffect(() => {
         if (userData?.role !== 'super_admin') {
-            setLoading(false);
             return;
         }
 
