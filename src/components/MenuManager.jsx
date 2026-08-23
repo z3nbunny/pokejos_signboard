@@ -44,19 +44,6 @@ function PriceInput({
     const [isEditing, setIsEditing] =
         useState(false);
 
-    useEffect(() => {
-        /*
-         * External changes, including Discard Changes,
-         * should update the field. Local typing should not
-         * be reformatted while the field has focus.
-         */
-        if (!isEditing) {
-            setDisplayValue(
-                formatPrice(priceCents)
-            );
-        }
-    }, [priceCents, isEditing]);
-
     const handleChange = (event) => {
         const nextValue = event.target.value;
 
@@ -127,8 +114,17 @@ function PriceInput({
             <input
                 type="text"
                 inputMode="decimal"
-                value={displayValue}
-                onFocus={() => setIsEditing(true)}
+                value={
+                    isEditing
+                        ? displayValue
+                        : formatPrice(priceCents)
+                }
+                onFocus={() => {
+                    setDisplayValue(
+                        formatPrice(priceCents)
+                    );
+                    setIsEditing(true);
+                }}
                 onChange={handleChange}
                 onBlur={finishEditing}
                 onKeyDown={(event) => {
