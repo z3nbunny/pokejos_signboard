@@ -474,13 +474,6 @@ export default function Admin() {
     }, []);
 
     useEffect(() => {
-        if (!editingId.schedule) {
-            setNewSchedStartDate(selectedDate);
-            setNewSchedEndDate(selectedDate);
-        }
-    }, [selectedDate, editingId.schedule]);
-
-    useEffect(() => {
         // Point directly to the activeLocation's settings document
         const settingsRef = doc(db, 'locations', activeLocation, 'settings', 'display');
         const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
@@ -659,6 +652,8 @@ export default function Admin() {
         if (editingId.schedule) {
             await setDoc(doc(db, 'locations', activeLocation, 'schedules', editingId.schedule), payload, { merge: true });
             setEditingId({ ...editingId, schedule: null });
+            setNewSchedStartDate(selectedDate);
+            setNewSchedEndDate(selectedDate);
         } else {
             await addDoc(collection(db, 'locations', activeLocation, 'schedules'), payload);
         }
@@ -735,6 +730,19 @@ export default function Admin() {
         setCampaignForm({ ...campaignForm, slides: newSlides });
     };
     const handleRemoveSlide = (index) => setCampaignForm({ ...campaignForm, slides: campaignForm.slides.filter((_, i) => i !== index) });
+
+    const handleSelectDate = (dateString) => {
+        setSelectedDate(dateString);
+
+        /*
+         * A calendar selection initializes a new schedule,
+         * but must not overwrite an existing schedule being edited.
+         */
+        if (!editingId.schedule) {
+            setNewSchedStartDate(dateString);
+            setNewSchedEndDate(dateString);
+        }
+    };
 
     const handleEditSchedule = (s) => {
         setEditingId({ ...editingId, schedule: s.id });
@@ -983,7 +991,7 @@ export default function Admin() {
                                                 return s.startTime <= dayEnd && s.endTime >= dayStart;
                                             });
                                             return (
-                                                <button key={day} onClick={() => setSelectedDate(dateStr)} className={`aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all border ${isSelected ? 'bg-accent border-accent text-white shadow-sm' : 'bg-bg border-border text-text-secondary hover:border-text-secondary'}`}>
+                                                <button key={day} onClick={() => handleSelectDate(dateStr)} className={`aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all border ${isSelected ? 'bg-accent border-accent text-white shadow-sm' : 'bg-bg border-border text-text-secondary hover:border-text-secondary'}`}>
                                                     <span className="text-sm font-semibold">{day}</span>
                                                     {daySchedules.length > 0 && (
                                                         <div className="flex gap-1 mt-1">
