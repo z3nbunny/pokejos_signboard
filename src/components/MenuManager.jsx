@@ -158,23 +158,17 @@ function PriceInput({
  */
 
 const createEditorId = (prefix) => {
-    let randomPart = '';
-
-    if (
+    const randomPart =
         typeof crypto !== 'undefined'
-        && typeof crypto.randomUUID === 'function'
-    ) {
-        randomPart = crypto
-            .randomUUID()
-            .replace(/-/g, '')
-            .slice(0, 12);
-    } else {
-        randomPart =
-            Date.now().toString(36)
+            && typeof crypto.randomUUID === 'function'
+            ? crypto
+                .randomUUID()
+                .replace(/-/g, '')
+                .slice(0, 12)
+            : Date.now().toString(36)
             + Math.random()
                 .toString(36)
                 .slice(2, 8);
-    }
 
     return `${prefix}_${randomPart}`;
 };

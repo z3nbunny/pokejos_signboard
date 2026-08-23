@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Admin from './components/Admin';
 import Weather from './components/Weather';
 import MerchCarousel from './components/MerchCarousel';
@@ -167,7 +167,7 @@ export default function App() {
 
   // --- 4. AUTOMATED SLEEP / WAKE SCHEDULER ---
   useEffect(() => {
-    if (currentView !== 'TV' || typeof fully === 'undefined') return;
+    if (currentView !== 'TV' || typeof window.fully === 'undefined') return;
 
     const checkStoreHours = () => {
       const now = new Date();
@@ -178,12 +178,12 @@ export default function App() {
       const sleepTime = 21 * 60 + 30; // 9:30 PM
 
       if (currentTimeInMinutes >= wakeTime && currentTimeInMinutes < sleepTime) {
-        if (typeof fully.getScreenOn === 'function' && !fully.getScreenOn()) {
-          fully.turnScreenOn();
+        if (typeof window.fully.getScreenOn === 'function' && !window.fully.getScreenOn()) {
+          window.fully.turnScreenOn();
         }
       } else {
-        if (typeof fully.getScreenOn === 'function' && fully.getScreenOn()) {
-          fully.turnScreenOff();
+        if (typeof window.fully.getScreenOn === 'function' && window.fully.getScreenOn()) {
+          window.fully.turnScreenOff();
         }
       }
     };

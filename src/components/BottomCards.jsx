@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase'; // Ensure your firebase config is set up
 import { collection, onSnapshot } from 'firebase/firestore';

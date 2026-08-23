@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Clock from './Clock';
 
 export default function Weather({ isFeature }) {
@@ -24,7 +24,7 @@ export default function Weather({ isFeature }) {
                         iconCode: data.weather[0].icon  // e.g., '01n' for Night
                     });
                 }
-            } catch (error) {
+            } catch {
                 console.error("Weather fetch failed.");
             }
         };

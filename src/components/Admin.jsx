@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, onSnapshot, getDoc, setDoc, collection, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc, collection, addDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import FleetDashboard from './FleetDashboard';
 import MenuManager from './MenuManager';
 import DevicePairingManager from './DevicePairingManager';
+
+const omitDocumentId = (record) => {
+    const cleanRecord = {
+        ...record
+    };
+
+    delete cleanRecord.id;
+
+    return cleanRecord;
+};
 
 const normalizeFramingValue = (
     value,
@@ -536,7 +546,8 @@ export default function Admin() {
 
     // --- SUPER ADMIN TEMPLATE DEPLOYMENT ---
     const handlePushCampaignToStores = async (campaign) => {
-        const { id, ...campaignData } = campaign;
+        const campaignData =
+            omitDocumentId(campaign);
 
         const target = window.prompt(
             `Deploy "${campaign.campaignName}" to:\nType "all", "brodie", "parmer", or "round_rock"`
@@ -545,7 +556,7 @@ export default function Admin() {
         if (!target) return;
 
         const validLocations = ['brodie', 'parmer', 'round_rock'];
-        let destinations = [];
+        let destinations;
 
         if (target.toLowerCase() === 'all') {
             destinations = validLocations;
@@ -593,7 +604,8 @@ export default function Admin() {
         e.preventDefault();
 
         // 1. Strip the local 'id' out of the form data
-        const { id, ...cleanData } = campaignForm;
+        const cleanData =
+            omitDocumentId(campaignForm);
 
         try {
             if (editingId.campaign) {
@@ -613,7 +625,8 @@ export default function Admin() {
     };
 
     const handleDuplicateCampaign = async (campaign) => {
-        const { id, ...campaignData } = campaign;
+        const campaignData =
+            omitDocumentId(campaign);
         campaignData.campaignName = `${campaign.campaignName} (Copy)`;
         await addDoc(collection(db, 'locations', activeLocation, 'campaigns'), campaignData);
     };
