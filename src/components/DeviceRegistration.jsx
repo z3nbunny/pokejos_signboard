@@ -20,53 +20,107 @@ function createPairingCode(uid) {
     const CODE_LIMIT = 1000000;
     let hash = 0;
 
-    for (let index = 0; index < uid.length; index += 1) {
-        hash = ((hash * 31) + uid.charCodeAt(index)) >>> 0;
+    for (
+        let index = 0;
+        index < uid.length;
+        index += 1
+    ) {
+        hash = (
+            (hash * 31)
+            + uid.charCodeAt(index)
+        ) >>> 0;
     }
 
-    return String(hash % CODE_LIMIT).padStart(6, '0');
+    return String(
+        hash % CODE_LIMIT
+    ).padStart(6, '0');
+}
+
+function getConfigurationError(
+    activeLocation,
+    deviceId
+) {
+    if (!VALID_LOCATIONS.includes(activeLocation)) {
+        return `Invalid location: ${activeLocation}`;
+    }
+
+    if (
+        !deviceId
+        || deviceId === 'unassigned'
+        || !/^[a-z0-9_-]{1,40}$/.test(deviceId)
+    ) {
+        return (
+            'This TV needs a valid device ID in its URL.'
+        );
+    }
+
+    return '';
 }
 
 export default function DeviceRegistration({
     activeLocation,
     deviceId
 }) {
-    const { currentUser, isDeviceUser } = useAuth();
+    const {
+        currentUser,
+        isDeviceUser
+    } = useAuth();
 
-    const [pairingStatus, setPairingStatus] =
-        useState('registering');
+    const configurationError =
+        getConfigurationError(
+            activeLocation,
+            deviceId
+        );
 
-    const [pairingError, setPairingError] =
-        useState('');
+    const registrationKey =
+        currentUser
+        && isDeviceUser
+        && !configurationError
+            ? [
+                currentUser.uid,
+                activeLocation,
+                deviceId
+            ].join(':')
+            : null;
+
+    const [
+        pairingResult,
+        setPairingResult
+    ] = useState({
+        registrationKey: null,
+        status: 'registering',
+        error: ''
+    });
+
+    const resultBelongsToCurrentRegistration =
+        pairingResult.registrationKey
+        === registrationKey;
+
+    const pairingStatus = configurationError
+        ? 'error'
+        : resultBelongsToCurrentRegistration
+            ? pairingResult.status
+            : 'registering';
+
+    const pairingError = configurationError
+        || (
+            resultBelongsToCurrentRegistration
+                ? pairingResult.error
+                : ''
+        );
 
     useEffect(() => {
-        if (!currentUser || !isDeviceUser) {
-            return;
-        }
-
-        if (!VALID_LOCATIONS.includes(activeLocation)) {
-            setPairingStatus('error');
-            setPairingError(
-                `Invalid location: ${activeLocation}`
-            );
-            return;
-        }
-
         if (
-            !deviceId
-            || deviceId === 'unassigned'
-            || !/^[a-z0-9_-]{1,40}$/.test(deviceId)
+            !currentUser
+            || !isDeviceUser
+            || configurationError
+            || !registrationKey
         ) {
-            setPairingStatus('error');
-            setPairingError(
-                'This TV needs a valid device ID in its URL.'
-            );
             return;
         }
 
-        const pairingCode = createPairingCode(
-            currentUser.uid
-        );
+        const pairingCode =
+            createPairingCode(currentUser.uid);
 
         const pairingRef = doc(
             db,
@@ -93,7 +147,8 @@ export default function DeviceRegistration({
                             deviceId,
                             pairingCode,
                             status: 'pending',
-                            createdAt: serverTimestamp()
+                            createdAt:
+                                serverTimestamp()
                         });
                     } catch (error) {
                         console.error(
@@ -101,34 +156,50 @@ export default function DeviceRegistration({
                             error
                         );
 
-                        setPairingStatus('error');
-                        setPairingError(
-                            'Unable to contact the pairing service.'
-                        );
+                        setPairingResult({
+                            registrationKey,
+                            status: 'error',
+                            error:
+                                'Unable to contact the '
+                                + 'pairing service.'
+                        });
                     }
 
                     return;
                 }
 
-                const pairingData = snapshot.data();
+                const pairingData =
+                    snapshot.data();
 
-                // Reject stale registrations if someone changes the
-                // location or device parameters in the TV URL.
+                /*
+                 * Reject stale registrations if someone
+                 * changes the location or device parameters
+                 * in the TV URL.
+                 */
                 if (
-                    pairingData.locationId !== activeLocation
-                    || pairingData.deviceId !== deviceId
+                    pairingData.locationId
+                        !== activeLocation
+                    || pairingData.deviceId
+                        !== deviceId
                 ) {
-                    setPairingStatus('error');
-                    setPairingError(
-                        'This TV identity is registered to a different URL.'
-                    );
+                    setPairingResult({
+                        registrationKey,
+                        status: 'error',
+                        error:
+                            'This TV identity is registered '
+                            + 'to a different URL.'
+                    });
+
                     return;
                 }
 
-                setPairingStatus(
-                    pairingData.status || 'pending'
-                );
-                setPairingError('');
+                setPairingResult({
+                    registrationKey,
+                    status:
+                        pairingData.status
+                        || 'pending',
+                    error: ''
+                });
             },
             (error) => {
                 console.error(
@@ -136,19 +207,24 @@ export default function DeviceRegistration({
                     error
                 );
 
-                setPairingStatus('error');
-                setPairingError(
-                    'Unable to read this TV pairing request.'
-                );
+                setPairingResult({
+                    registrationKey,
+                    status: 'error',
+                    error:
+                        'Unable to read this TV '
+                        + 'pairing request.'
+                });
             }
         );
 
         return () => unsubscribe();
     }, [
         activeLocation,
+        configurationError,
         currentUser,
         deviceId,
-        isDeviceUser
+        isDeviceUser,
+        registrationKey
     ]);
 
     if (pairingStatus === 'approved') {
@@ -184,8 +260,9 @@ export default function DeviceRegistration({
                         </h1>
 
                         <p className="text-xl text-slate-300">
-                            Check this TV’s location and device URL,
-                            then contact an administrator.
+                            Check this TV’s location and
+                            device URL, then contact an
+                            administrator.
                         </p>
                     </>
                 ) : (
@@ -195,8 +272,9 @@ export default function DeviceRegistration({
                         </h1>
 
                         <p className="text-xl text-slate-300 mb-8">
-                            Open the admin dashboard and approve
-                            the following pairing code:
+                            Open the admin dashboard and
+                            approve the following pairing
+                            code:
                         </p>
 
                         <div className="text-8xl font-black tracking-[0.2em] text-amber-400 mb-8">
@@ -204,9 +282,15 @@ export default function DeviceRegistration({
                         </div>
 
                         <div className="text-lg text-slate-400 uppercase tracking-widest">
-                            {activeLocation.replace('_', ' ')}
+                            {activeLocation.replace(
+                                '_',
+                                ' '
+                            )}
                             {' — '}
-                            {deviceId.replace('_', ' ')}
+                            {deviceId.replace(
+                                '_',
+                                ' '
+                            )}
                         </div>
                     </>
                 )}
