@@ -8,9 +8,6 @@ export default function MerchCarousel({ isFeature, activeLocation }) {
     const [offset, setOffset] = useState(0);
 
     useEffect(() => {
-        setSlides([]);
-        setOffset(0);
-
         const slidesQuery = query(
             collection(
                 db,

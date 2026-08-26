@@ -74,8 +74,8 @@ export default function DeviceRegistration({
 
     const registrationKey =
         currentUser
-        && isDeviceUser
-        && !configurationError
+            && isDeviceUser
+            && !configurationError
             ? [
                 currentUser.uid,
                 activeLocation,
@@ -178,9 +178,9 @@ export default function DeviceRegistration({
                  */
                 if (
                     pairingData.locationId
-                        !== activeLocation
+                    !== activeLocation
                     || pairingData.deviceId
-                        !== deviceId
+                    !== deviceId
                 ) {
                     setPairingResult({
                         registrationKey,

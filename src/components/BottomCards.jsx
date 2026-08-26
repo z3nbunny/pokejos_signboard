@@ -54,9 +54,6 @@ export default function BottomCards({ isFeature, activeLocation }) {
     const [displayCards, setDisplayCards] = useState([]);
 
     useEffect(() => {
-        setAllCards([]);
-        setDisplayCards([]);
-
         const unsubscribe = onSnapshot(
             collection(
                 db,

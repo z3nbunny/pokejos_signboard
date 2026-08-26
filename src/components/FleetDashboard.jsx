@@ -50,8 +50,6 @@ export default function FleetDashboard({ activeLocation }) {
 
     // 3. New screenshot listener
     useEffect(() => {
-        setScreenshots({});
-
         const screenshotCollection = collection(
             db,
             'locations',

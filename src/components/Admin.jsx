@@ -1420,7 +1420,10 @@ export default function Admin() {
 
                                 {/* Fleet Telemetry Panel */}
                                 <div className="bg-bg p-6 rounded-3xl border border-border shadow-sm">
-                                    <FleetDashboard activeLocation={activeLocation} />
+                                    <FleetDashboard
+                                        key={`fleet-${activeLocation}`}
+                                        activeLocation={activeLocation}
+                                    />
                                 </div>
                             </div>
                         )}

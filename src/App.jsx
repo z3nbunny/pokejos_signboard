@@ -277,7 +277,16 @@ export default function App() {
       {/* Conditional render for Event Mode vs Main Grid */}
       {isEvent ? (
         <div className="w-screen h-screen overflow-hidden bg-black select-none">
-          <EventMode slides={activeCampaign?.slides || []} />
+          <EventMode
+            key={[
+              activeLocation,
+              activeCampaign?.id || 'none',
+              JSON.stringify(
+                activeCampaign?.slides || []
+              )
+            ].join(':')}
+            slides={activeCampaign?.slides || []}
+          />
         </div>
       ) : (
 
@@ -302,7 +311,11 @@ export default function App() {
                 <Weather />
               </div>
               <div className="flex-1 h-full overflow-hidden flex items-center justify-center">
-                <MerchCarousel activeLocation={activeLocation} isFeature={isFeature} />
+                <MerchCarousel
+                  key={`merch-${activeLocation}`}
+                  activeLocation={activeLocation}
+                  isFeature={isFeature}
+                />
               </div>
               <div className="shrink-0 w-[14vw] flex flex-col items-center justify-center">
                 <h2 className="text-[1.8vw] font-black tracking-widest uppercase text-black mb-[1.5vh] text-center leading-tight shrink-0 whitespace-pre-line">
@@ -321,7 +334,11 @@ export default function App() {
               </div>
               <div className="flex-1 flex gap-[1vw] overflow-hidden">
                 <div className="flex-1 h-full bg-transparent overflow-hidden">
-                  <MerchCarousel activeLocation={activeLocation} isFeature={isFeature} />
+                  <MerchCarousel
+                    key={`merch-${activeLocation}`}
+                    activeLocation={activeLocation}
+                    isFeature={isFeature}
+                  />
                 </div>
                 <div className="shrink-0 w-[12vw] flex flex-col items-center justify-center">
                   <h2 className="text-[1.7vw] font-black tracking-widest uppercase text-black mb-[1vh] text-center leading-tight whitespace-pre-line">
@@ -331,12 +348,20 @@ export default function App() {
                 </div>
               </div>
               <div className="h-[35%] overflow-hidden">
-                <BottomCards activeLocation={activeLocation} isFeature={isFeature} />
+                <BottomCards
+                  key={`cards-${activeLocation}`}
+                  activeLocation={activeLocation}
+                  isFeature={isFeature}
+                />
               </div>
             </div>
           ) : (
             <div className="h-full overflow-hidden">
-              <BottomCards activeLocation={activeLocation} isFeature={isFeature} />
+              <BottomCards
+                key={`cards-${activeLocation}`}
+                activeLocation={activeLocation}
+                isFeature={isFeature}
+              />
             </div>
           )}
         </div>

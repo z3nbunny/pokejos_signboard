@@ -8,17 +8,6 @@ export default function EventMode({ slides }) {
         slides?.length ? slides.map(() => Math.floor(Math.random() * 6)) : []
     );
 
-    // Reset slideshow state whenever the campaign slides change.
-    useEffect(() => {
-        setCurrentIndex(0);
-
-        setEffects(
-            slides?.map(() =>
-                Math.floor(Math.random() * 6)
-            ) || []
-        );
-    }, [slides]);
-
     // Run the slideshow timer
     useEffect(() => {
         if (!slides || slides.length <= 1) return;
