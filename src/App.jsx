@@ -4,6 +4,7 @@ import Weather from './components/Weather';
 import MerchCarousel from './components/MerchCarousel';
 import BottomCards from './components/BottomCards';
 import EventMode from './components/EventMode';
+import MeatMenuDisplay from './components/MeatMenuDisplay';
 import { db } from './firebase';
 import { doc, collection, onSnapshot } from 'firebase/firestore';
 import { useAuth } from './contexts/useAuth';
@@ -35,6 +36,15 @@ export default function App() {
   const queryParams = new URLSearchParams(window.location.search);
   const activeLocation = queryParams.get('location') || 'brodie';
   const deviceId = queryParams.get('device') || 'unassigned';
+  const requestedScreen = String(
+    queryParams.get('screen') || 'lobby'
+  ).toLowerCase();
+
+  const isMeatMenuScreen =
+    requestedScreen === 'meat';
+
+  const includeScheduledSpotlights =
+    queryParams.get('preview') === '1';
 
   const [manualLayout, setManualLayout] = useState('DEFAULT');
   const [activeLayout, setActiveLayout] = useState('DEFAULT');
@@ -82,7 +92,10 @@ export default function App() {
 
   // --- 2. MULTI-TENANT DATA FETCHING (SOLO LISTENER) ---
   useEffect(() => {
-    if (currentView === 'TV') {
+    if (
+      currentView === 'TV'
+      && !isMeatMenuScreen
+    ) {
       const unsubSettings = onSnapshot(doc(db, 'locations', activeLocation, 'settings', 'display'), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -108,14 +121,23 @@ export default function App() {
 
       return () => { unsubSettings(); unsubSchedule(); unsubCampaigns(); };
     }
-  }, [currentView, activeLocation]);
+  }, [
+    currentView,
+    activeLocation,
+    isMeatMenuScreen
+  ]);
 
   // --- 2b. FULLY KIOSK REMOTE COMMAND LISTENER (DEVICE LEVEL) ---
 
 
   // --- 3. THE TIMEKEEPER ENGINE ---
   useEffect(() => {
-    if (currentView !== 'TV') return;
+    if (
+      currentView !== 'TV'
+      || isMeatMenuScreen
+    ) {
+      return;
+    }
 
     const evaluateTimeWindow = () => {
       const now = Date.now();
@@ -162,7 +184,14 @@ export default function App() {
     evaluateTimeWindow();
     const timekeeperTicker = setInterval(evaluateTimeWindow, 1000);
     return () => clearInterval(timekeeperTicker);
-  }, [scheduleQueue, campaignLibrary, manualLayout, currentView, defaultCampaignIds]);
+  }, [
+    scheduleQueue,
+    campaignLibrary,
+    manualLayout,
+    currentView,
+    defaultCampaignIds,
+    isMeatMenuScreen
+  ]);
 
   // --- 4. AUTOMATED SLEEP / WAKE SCHEDULER ---
   useEffect(() => {
@@ -274,8 +303,15 @@ export default function App() {
         />
       )}
 
-      {/* Conditional render for Event Mode vs Main Grid */}
-      {isEvent ? (
+      {/* Explicit Meat Menu mode leaves existing displays unchanged. */}
+      {isMeatMenuScreen ? (
+        <MeatMenuDisplay
+          activeLocation={activeLocation}
+          includeScheduledSpotlights={
+            includeScheduledSpotlights
+          }
+        />
+      ) : isEvent ? (
         <div className="w-screen h-screen overflow-hidden bg-black select-none">
           <EventMode
             key={[

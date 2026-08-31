@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     doc,
     getDoc,
     onSnapshot,
+    runTransaction,
     serverTimestamp,
     setDoc,
     updateDoc
@@ -10,6 +12,8 @@ import {
 
 import { db } from '../firebase';
 import { useAuth } from '../contexts/useAuth';
+import MeatMenuPreview from './MeatMenuPreview';
+import MenuSpotlightManager from './MenuSpotlightManager';
 import { MEAT_MENU_SEED } from '../data/meatMenuSeed';
 
 const DEFAULT_MEAT_AVAILABLE_ON = [
@@ -28,6 +32,15 @@ const EDITABLE_MEAT_CONTEXTS = [
         label: 'Available on Sandwiches'
     }
 ];
+
+const DEFAULT_DISPLAY_NOTICES = {
+    platesAndSandwichesBrisketUpchargeCents: 200,
+    specialtyBrisketUpchargeCents: 100,
+    glutenDisclaimer:
+        'Products are prepared in a shared kitchen. Cross-contact with gluten and other allergens is possible. Please tell our team about any allergies.',
+    glutenDisclaimerEs:
+        'Los productos se preparan en una cocina compartida. Puede haber contacto cruzado con gluten y otros alérgenos. Informe a nuestro personal sobre cualquier alergia.'
+};
 
 function PriceInput({
     priceCents,
@@ -457,7 +470,7 @@ function MenuItemEditor({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
                     <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                        Item Name
+                        English Item Name
                     </label>
 
                     <input
@@ -477,23 +490,44 @@ function MenuItemEditor({
 
                 <div>
                     <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                        Description
+                        Spanish Item Name
                     </label>
 
                     <input
                         type="text"
-                        value={item.description || ''}
+                        value={item.nameEs || ''}
+                        placeholder="Optional Spanish display name"
                         onChange={(event) =>
                             onItemChange(
                                 sectionId,
                                 item.id,
-                                'description',
+                                'nameEs',
                                 event.target.value
                             )
                         }
                         className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
                     />
                 </div>
+            </div>
+
+            <div>
+                <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                    Description
+                </label>
+
+                <input
+                    type="text"
+                    value={item.description || ''}
+                    onChange={(event) =>
+                        onItemChange(
+                            sectionId,
+                            item.id,
+                            'description',
+                            event.target.value
+                        )
+                    }
+                    className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                />
             </div>
 
             <div>
@@ -1198,11 +1232,55 @@ export default function MenuManager() {
         setHighlightedItemId
     ] = useState(null);
 
+    const [
+        isPreviewOpen,
+        setIsPreviewOpen
+    ] = useState(false);
+
+    const [
+        previewSpotlight,
+        setPreviewSpotlight
+    ] = useState(null);
+
+    useEffect(() => {
+        if (!isPreviewOpen) {
+            return undefined;
+        }
+
+        const previousOverflow =
+            document.body.style.overflow;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setIsPreviewOpen(false);
+            }
+        };
+
+        document.body.style.overflow = 'hidden';
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.body.style.overflow =
+                previousOverflow;
+
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [isPreviewOpen]);
+
     const [loading, setLoading] = useState(true);
     const [initializing, setInitializing] =
         useState(false);
 
     const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] =
+        useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] =
         useState(false);
 
@@ -1232,8 +1310,21 @@ export default function MenuManager() {
         const unsubscribe = onSnapshot(
             draftRef,
             (snapshot) => {
-                const loadedDraft = snapshot.exists()
+                const storedDraft = snapshot.exists()
                     ? snapshot.data()
+                    : null;
+
+                const loadedDraft = storedDraft
+                    ? {
+                        ...storedDraft,
+                        displayNotices: {
+                            ...DEFAULT_DISPLAY_NOTICES,
+                            ...(
+                                storedDraft.displayNotices
+                                || {}
+                            )
+                        }
+                    }
                     : null;
 
                 setDraftMenu(loadedDraft);
@@ -1296,6 +1387,23 @@ export default function MenuManager() {
         applyDraftUpdate((currentDraft) => ({
             ...currentDraft,
             [field]: value
+        }));
+    };
+
+    const updateDisplayNotice = (
+        field,
+        value
+    ) => {
+        applyDraftUpdate((currentDraft) => ({
+            ...currentDraft,
+            displayNotices: {
+                ...DEFAULT_DISPLAY_NOTICES,
+                ...(
+                    currentDraft.displayNotices
+                    || {}
+                ),
+                [field]: value
+            }
         }));
     };
 
@@ -1528,8 +1636,9 @@ export default function MenuManager() {
 
             /*
              * Linked placements share their customer-facing
-             * name and bulk-price eligibility. Visibility and
-             * descriptions remain placement-specific.
+             * English and Spanish names and bulk-price
+             * eligibility. Visibility and descriptions remain
+             * placement-specific.
              */
             const synchronizeLinkedItems =
                 Boolean(
@@ -1537,6 +1646,7 @@ export default function MenuManager() {
                 )
                 && [
                     'name',
+                    'nameEs',
                     'bulkPriceEligible'
                 ].includes(field);
 
@@ -1707,6 +1817,7 @@ export default function MenuManager() {
                             {
                                 id: newItemId,
                                 name: 'New Menu Item',
+                                nameEs: '',
                                 description: '',
                                 details: [],
                                 priceOptions: [
@@ -2149,6 +2260,45 @@ export default function MenuManager() {
             );
         }
 
+        const displayNotices = {
+            ...DEFAULT_DISPLAY_NOTICES,
+            ...(draftMenu.displayNotices || {})
+        };
+
+        if (
+            !Number.isInteger(
+                displayNotices
+                    .platesAndSandwichesBrisketUpchargeCents
+            )
+            || displayNotices
+                .platesAndSandwichesBrisketUpchargeCents
+            < 0
+        ) {
+            throw new Error(
+                'The plate and sandwich brisket upcharge is invalid.'
+            );
+        }
+
+        if (
+            !Number.isInteger(
+                displayNotices
+                    .specialtyBrisketUpchargeCents
+            )
+            || displayNotices
+                .specialtyBrisketUpchargeCents
+            < 0
+        ) {
+            throw new Error(
+                'The specialty-item brisket upcharge is invalid.'
+            );
+        }
+
+        if (!displayNotices.glutenDisclaimer?.trim()) {
+            throw new Error(
+                'The shared-kitchen disclaimer cannot be empty.'
+            );
+        }
+
         for (const section of draftMenu.sections) {
             if (!section.title?.trim()) {
                 throw new Error(
@@ -2241,6 +2391,8 @@ export default function MenuManager() {
                 (item) => ({
                     ...item,
                     name: item.name.trim(),
+                    nameEs:
+                        item.nameEs?.trim() || '',
                     description:
                         item.description?.trim() || '',
                     details: (item.details || [])
@@ -2317,6 +2469,24 @@ export default function MenuManager() {
                     title: draftMenu.title.trim(),
                     subtitle:
                         draftMenu.subtitle?.trim() || '',
+                    displayNotices: {
+                        ...DEFAULT_DISPLAY_NOTICES,
+                        ...(draftMenu.displayNotices || {}),
+                        glutenDisclaimer:
+                            (
+                                draftMenu.displayNotices
+                                    ?.glutenDisclaimer
+                                || DEFAULT_DISPLAY_NOTICES
+                                    .glutenDisclaimer
+                            ).trim(),
+                        glutenDisclaimerEs:
+                            (
+                                draftMenu.displayNotices
+                                    ?.glutenDisclaimerEs
+                                || DEFAULT_DISPLAY_NOTICES
+                                    .glutenDisclaimerEs
+                            ).trim()
+                    },
                     sections: cleanSections,
                     updatedAt: serverTimestamp(),
                     updatedBy: currentUser.uid
@@ -2344,6 +2514,214 @@ export default function MenuManager() {
             setSaving(false);
         }
     };
+
+    const handlePublishMenu = async () => {
+        if (
+            userData?.role !== 'super_admin'
+            || !currentUser
+            || !draftMenu
+            || hasUnsavedChanges
+            || saving
+            || publishing
+        ) {
+            return;
+        }
+
+        try {
+            validateDraft();
+        } catch (error) {
+            setMessage(
+                error.message
+                || 'The Meat Menu could not be validated.'
+            );
+            return;
+        }
+
+        const confirmed = window.confirm(
+            'Publish the saved Meat Menu now? '
+            + 'Any Meat Menu displays will update immediately.'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setPublishing(true);
+        setMessage('');
+
+        try {
+            const publishedVersion =
+                await runTransaction(
+                    db,
+                    async (transaction) => {
+                        const draftRef = doc(
+                            db,
+                            'globalMenuDrafts',
+                            'meat'
+                        );
+
+                        const publishedRef = doc(
+                            db,
+                            'globalMenus',
+                            'meat'
+                        );
+
+                        /*
+                         * All transaction reads must happen before
+                         * any writes are queued.
+                         */
+                        const draftSnapshot =
+                            await transaction.get(
+                                draftRef
+                            );
+
+                        const publishedSnapshot =
+                            await transaction.get(
+                                publishedRef
+                            );
+
+                        if (!draftSnapshot.exists()) {
+                            throw new Error(
+                                'The saved Meat Menu draft no longer exists.'
+                            );
+                        }
+
+                        const storedDraft =
+                            draftSnapshot.data();
+
+                        const currentVersion =
+                            publishedSnapshot.exists()
+                                ? Number(
+                                    publishedSnapshot
+                                        .data()
+                                        .version || 0
+                                )
+                                : 0;
+
+                        const nextVersion =
+                            currentVersion + 1;
+
+                        const revisionId =
+                            `v${String(nextVersion)
+                                .padStart(4, '0')}`;
+
+                        const revisionRef = doc(
+                            db,
+                            'globalMenuRevisions',
+                            'meat',
+                            'versions',
+                            revisionId
+                        );
+
+                        const storedNotices = {
+                            ...DEFAULT_DISPLAY_NOTICES,
+                            ...(
+                                storedDraft
+                                    .displayNotices
+                                || {}
+                            )
+                        };
+
+                        const publishedMenu = {
+                            title: String(
+                                storedDraft.title || ''
+                            ).trim(),
+
+                            subtitle: String(
+                                storedDraft.subtitle || ''
+                            ).trim(),
+
+                            displayNotices: {
+                                ...storedNotices,
+
+                                glutenDisclaimer:
+                                    String(
+                                        storedNotices
+                                            .glutenDisclaimer
+                                        || ''
+                                    ).trim(),
+
+                                glutenDisclaimerEs:
+                                    String(
+                                        storedNotices
+                                            .glutenDisclaimerEs
+                                        || ''
+                                    ).trim()
+                            },
+
+                            sections:
+                                storedDraft.sections || [],
+
+                            version: nextVersion,
+                            publishedAt:
+                                serverTimestamp(),
+                            publishedBy:
+                                currentUser.uid
+                        };
+
+                        if (
+                            !publishedMenu.title
+                            || publishedMenu
+                                .sections.length === 0
+                        ) {
+                            throw new Error(
+                                'The saved Meat Menu draft is incomplete.'
+                            );
+                        }
+
+                        transaction.set(
+                            publishedRef,
+                            publishedMenu
+                        );
+
+                        transaction.set(
+                            revisionRef,
+                            {
+                                ...publishedMenu,
+                                revisionId
+                            }
+                        );
+
+                        transaction.update(
+                            draftRef,
+                            {
+                                sourceVersion:
+                                    nextVersion,
+
+                                revisionNumber:
+                                    nextVersion,
+
+                                publishedAt:
+                                    serverTimestamp(),
+
+                                publishedBy:
+                                    currentUser.uid
+                            }
+                        );
+
+                        return nextVersion;
+                    }
+                );
+
+            setMessage(
+                `Meat Menu version ${publishedVersion} `
+                + 'published successfully.'
+            );
+        } catch (error) {
+            console.error(
+                'Unable to publish Meat Menu:',
+                error
+            );
+
+            setMessage(
+                error.message
+                || 'The Meat Menu could not be published.'
+            );
+        } finally {
+            setPublishing(false);
+        }
+    };
+
 
     const handleDiscardChanges = () => {
         setDraftMenu(savedDraftMenu);
@@ -2386,6 +2764,8 @@ export default function MenuManager() {
 
             await setDoc(draftRef, {
                 ...MEAT_MENU_SEED,
+                displayNotices:
+                    DEFAULT_DISPLAY_NOTICES,
                 sourceVersion: 0,
                 revisionNumber: 0,
                 createdAt: serverTimestamp(),
@@ -2498,6 +2878,32 @@ export default function MenuManager() {
 
     return (
         <div className="space-y-6">
+            {isPreviewOpen && createPortal(
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Full-screen Meat Menu preview"
+                    className="fixed inset-0 z-[10000] bg-black overflow-hidden flex items-center justify-center p-[2vw]"
+                >
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setIsPreviewOpen(false)
+                        }
+                        className="absolute top-4 right-4 z-10 px-5 py-2.5 rounded-full bg-white text-black text-xs font-black uppercase tracking-wider hover:bg-zinc-200"
+                    >
+                        Close Preview
+                    </button>
+
+                    <div className="w-[min(96vw,160vh)] aspect-video overflow-hidden shadow-2xl">
+                        <MeatMenuPreview
+                            menu={draftMenu}
+                            spotlight={previewSpotlight}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
             <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
                 <div>
                     <div className="flex items-center gap-3 flex-wrap">
@@ -2529,6 +2935,7 @@ export default function MenuManager() {
                         disabled={
                             !hasUnsavedChanges
                             || saving
+                            || publishing
                         }
                         className="px-5 py-2.5 bg-surface hover:bg-border disabled:opacity-40 border border-border rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
                     >
@@ -2547,6 +2954,25 @@ export default function MenuManager() {
                         {saving
                             ? 'Saving...'
                             : 'Save Draft'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handlePublishMenu}
+                        disabled={
+                            hasUnsavedChanges
+                            || saving
+                            || publishing
+                        }
+                        title={
+                            hasUnsavedChanges
+                                ? 'Save or discard draft changes before publishing.'
+                                : 'Publish the saved menu to restaurant displays.'
+                        }
+                        className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-black rounded-full text-xs font-black uppercase tracking-wider transition-colors"
+                    >
+                        {publishing
+                            ? 'Publishing...'
+                            : 'Publish Menu'}
                     </button>
                 </div>
             </div>
@@ -2621,7 +3047,173 @@ export default function MenuManager() {
                         </p>
                     </div>
                 </div>
+                {message && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="rounded-2xl border border-accent/30 bg-accent-light px-5 py-4 text-sm font-bold text-text-primary"
+                    >
+                        {message}
+                    </div>
+                )}
             </section>
+
+            <section className="bg-bg border border-border rounded-3xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-bold">
+                            Live Meat Menu Preview
+                        </h3>
+
+                        <p className="text-sm text-text-secondary mt-1">
+                            This preview reflects the current working
+                            draft, including unsaved changes.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setIsPreviewOpen(true)
+                        }
+                        className="px-5 py-2.5 bg-surface hover:bg-border border border-border rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
+                    >
+                        Open Full-Screen Preview
+                    </button>
+                </div>
+
+                <div className="w-full aspect-video overflow-hidden rounded-2xl border border-border bg-black shadow-xl">
+                    <MeatMenuPreview
+                        menu={draftMenu}
+                        spotlight={previewSpotlight}
+                    />
+                </div>
+
+                <p className="text-xs text-text-secondary">
+                    Preview only—opening or closing this display does
+                    not save or publish the menu.
+                </p>
+            </section>
+
+            <MenuSpotlightManager
+                menu={draftMenu}
+                onPreviewChange={setPreviewSpotlight}
+            />
+
+            <section className="bg-bg border border-border rounded-3xl p-5 space-y-5">
+                <div>
+                    <h3 className="text-lg font-bold">
+                        Menu Display Notices
+                    </h3>
+
+                    <p className="text-sm text-text-secondary mt-1">
+                        These centralized notices replace repeated
+                        brisket modifiers on the display. Their prices
+                        remain excluded from uniform adjustments.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                            Plates and Sandwiches Brisket Upcharge
+                        </label>
+
+                        <PriceInput
+                            priceCents={
+                                draftMenu.displayNotices
+                                    ?.platesAndSandwichesBrisketUpchargeCents
+                                ?? DEFAULT_DISPLAY_NOTICES
+                                    .platesAndSandwichesBrisketUpchargeCents
+                            }
+                            onChange={(priceCents) =>
+                                updateDisplayNotice(
+                                    'platesAndSandwichesBrisketUpchargeCents',
+                                    priceCents
+                                )
+                            }
+                            disabled={saving}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                            Pok-E-To, Spud and Salad Brisket Upcharge
+                        </label>
+
+                        <PriceInput
+                            priceCents={
+                                draftMenu.displayNotices
+                                    ?.specialtyBrisketUpchargeCents
+                                ?? DEFAULT_DISPLAY_NOTICES
+                                    .specialtyBrisketUpchargeCents
+                            }
+                            onChange={(priceCents) =>
+                                updateDisplayNotice(
+                                    'specialtyBrisketUpchargeCents',
+                                    priceCents
+                                )
+                            }
+                            disabled={saving}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                            Shared-Kitchen Disclaimer
+                        </label>
+
+                        <textarea
+                            rows="4"
+                            value={
+                                draftMenu.displayNotices
+                                    ?.glutenDisclaimer
+                                || DEFAULT_DISPLAY_NOTICES
+                                    .glutenDisclaimer
+                            }
+                            onChange={(event) =>
+                                updateDisplayNotice(
+                                    'glutenDisclaimer',
+                                    event.target.value
+                                )
+                            }
+                            className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                            Spanish Shared-Kitchen Disclaimer
+                        </label>
+
+                        <textarea
+                            rows="4"
+                            value={
+                                draftMenu.displayNotices
+                                    ?.glutenDisclaimerEs
+                                || DEFAULT_DISPLAY_NOTICES
+                                    .glutenDisclaimerEs
+                            }
+                            onChange={(event) =>
+                                updateDisplayNotice(
+                                    'glutenDisclaimerEs',
+                                    event.target.value
+                                )
+                            }
+                            className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
+                        />
+                    </div>
+                </div>
+
+                <p className="text-xs text-text-secondary">
+                    Have the final disclaimer wording approved by
+                    ownership or the restaurant's food-safety lead
+                    before publishing the menu.
+                </p>
+            </section>
+
             <section className="bg-bg border border-border rounded-3xl p-5 space-y-5">
                 <div>
                     <h3 className="text-lg font-bold">
