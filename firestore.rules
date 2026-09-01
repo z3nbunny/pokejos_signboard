@@ -362,6 +362,29 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // --- DEVICE-SPECIFIC MENU PREVIEWS ---
+
+    match /locations/{locationId}/devices/{deviceId}/menuPreviews/{menuId} {
+
+      // A paired TV may retrieve only the preview assigned
+      // to its own device identity.
+      allow get: if isSuperAdmin()
+        || (
+          isSupportedMenu(menuId)
+          && isPairedTv(
+            locationId,
+            deviceId
+          )
+        );
+
+      // TVs cannot enumerate preview documents.
+      allow list: if isSuperAdmin();
+
+      // Only super admins may send or remove preview menus.
+      allow create, update, delete:
+        if isSuperAdmin()
+        && isSupportedMenu(menuId);
+    }
 
     // Required for the super-admin collection-group query.
     match /{path=**}/devices/{deviceId} {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+    collection,
     doc,
     getDoc,
     onSnapshot,
@@ -30,6 +31,21 @@ const EDITABLE_MEAT_CONTEXTS = [
     {
         id: 'sandwiches',
         label: 'Available on Sandwiches'
+    }
+];
+
+const MENU_PREVIEW_LOCATIONS = [
+    {
+        id: 'brodie',
+        label: 'Brodie'
+    },
+    {
+        id: 'parmer',
+        label: 'Parmer'
+    },
+    {
+        id: 'round_rock',
+        label: 'Round Rock'
     }
 ];
 
@@ -1281,6 +1297,25 @@ export default function MenuManager() {
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] =
         useState(false);
+    const [
+        sendingTvPreview,
+        setSendingTvPreview
+    ] = useState(false);
+
+    const [
+        previewLocationId,
+        setPreviewLocationId
+    ] = useState('brodie');
+
+    const [
+        previewDeviceId,
+        setPreviewDeviceId
+    ] = useState('');
+
+    const [
+        previewDeviceIds,
+        setPreviewDeviceIds
+    ] = useState([]);
     const [hasUnsavedChanges, setHasUnsavedChanges] =
         useState(false);
 
@@ -1295,6 +1330,62 @@ export default function MenuManager() {
         priceAdjustmentBackup,
         setPriceAdjustmentBackup
     ] = useState(null);
+
+    useEffect(() => {
+        if (userData?.role !== 'super_admin') {
+            return undefined;
+        }
+
+        const deviceCollection = collection(
+            db,
+            'locations',
+            previewLocationId,
+            'devices'
+        );
+
+        const unsubscribe = onSnapshot(
+            deviceCollection,
+            (snapshot) => {
+                const deviceIds = snapshot.docs
+                    .map((deviceSnapshot) =>
+                        deviceSnapshot.id
+                    )
+                    .sort((firstId, secondId) =>
+                        firstId.localeCompare(secondId)
+                    );
+
+                setPreviewDeviceIds(deviceIds);
+
+                setPreviewDeviceId(
+                    (currentDeviceId) => {
+                        if (
+                            deviceIds.includes(
+                                currentDeviceId
+                            )
+                        ) {
+                            return currentDeviceId;
+                        }
+
+                        return deviceIds[0] || '';
+                    }
+                );
+            },
+            (error) => {
+                console.error(
+                    'Unable to load preview devices:',
+                    error
+                );
+
+                setPreviewDeviceIds([]);
+                setPreviewDeviceId('');
+            }
+        );
+
+        return () => unsubscribe();
+    }, [
+        previewLocationId,
+        userData?.role
+    ]);
 
     useEffect(() => {
         if (userData?.role !== 'super_admin') {
@@ -2515,6 +2606,180 @@ export default function MenuManager() {
         }
     };
 
+    const handleSendToTvPreview = async () => {
+        if (
+            userData?.role !== 'super_admin'
+            || !currentUser
+            || !draftMenu
+            || hasUnsavedChanges
+            || saving
+            || publishing
+            || sendingTvPreview
+            || !previewLocationId
+            || !previewDeviceId
+        ) {
+            return;
+        }
+
+        setSendingTvPreview(true);
+        setMessage('');
+
+        try {
+            validateDraft();
+
+            const draftRef = doc(
+                db,
+                'globalMenuDrafts',
+                'meat'
+            );
+
+            const deviceRef = doc(
+                db,
+                'locations',
+                previewLocationId,
+                'devices',
+                previewDeviceId
+            );
+
+            const [
+                draftSnapshot,
+                deviceSnapshot
+            ] = await Promise.all([
+                getDoc(draftRef),
+                getDoc(deviceRef)
+            ]);
+
+            if (!draftSnapshot.exists()) {
+                throw new Error(
+                    'The saved Meat Menu draft no longer exists.'
+                );
+            }
+
+            if (!deviceSnapshot.exists()) {
+                throw new Error(
+                    'The selected preview device no longer exists.'
+                );
+            }
+
+            if (
+                !String(
+                    deviceSnapshot.data().authUid || ''
+                ).trim()
+            ) {
+                throw new Error(
+                    'The selected preview device is not paired.'
+                );
+            }
+
+            const storedDraft =
+                draftSnapshot.data();
+
+            const storedNotices = {
+                ...DEFAULT_DISPLAY_NOTICES,
+                ...(storedDraft.displayNotices || {})
+            };
+
+            const previewMenu = {
+                title: String(
+                    storedDraft.title || ''
+                ).trim(),
+
+                subtitle: String(
+                    storedDraft.subtitle || ''
+                ).trim(),
+
+                displayNotices: {
+                    ...storedNotices,
+
+                    glutenDisclaimer:
+                        String(
+                            storedNotices
+                                .glutenDisclaimer
+                            || ''
+                        ).trim(),
+
+                    glutenDisclaimerEs:
+                        String(
+                            storedNotices
+                                .glutenDisclaimerEs
+                            || ''
+                        ).trim()
+                },
+
+                sections:
+                    Array.isArray(storedDraft.sections)
+                        ? storedDraft.sections
+                        : [],
+
+                sourceVersion:
+                    Number(
+                        storedDraft.sourceVersion || 0
+                    ),
+
+                sourceDraftUpdatedAt:
+                    storedDraft.updatedAt || null,
+
+                previewedAt: serverTimestamp(),
+                previewedBy: currentUser.uid
+            };
+
+            if (
+                !previewMenu.title
+                || previewMenu.sections.length === 0
+            ) {
+                throw new Error(
+                    'The saved Meat Menu draft is incomplete.'
+                );
+            }
+
+            const previewRef = doc(
+                db,
+                'locations',
+                previewLocationId,
+                'devices',
+                previewDeviceId,
+                'menuPreviews',
+                'meat'
+            );
+
+            await setDoc(
+                previewRef,
+                previewMenu
+            );
+
+            const locationLabel =
+                MENU_PREVIEW_LOCATIONS.find(
+                    (location) =>
+                        location.id
+                        === previewLocationId
+                )?.label || previewLocationId;
+
+            const deviceLabel =
+                previewDeviceId.replace(
+                    /_/g,
+                    ' '
+                );
+
+            setMessage(
+                `Saved Meat Menu draft sent to `
+                + `${locationLabel} — ${deviceLabel}. `
+                + 'The published menu version was not changed.'
+            );
+        } catch (error) {
+            console.error(
+                'Unable to send Meat Menu preview:',
+                error
+            );
+
+            setMessage(
+                error.message
+                || 'The Meat Menu preview could not be sent.'
+            );
+        } finally {
+            setSendingTvPreview(false);
+        }
+    };
+
     const handlePublishMenu = async () => {
         if (
             userData?.role !== 'super_admin'
@@ -2976,6 +3241,120 @@ export default function MenuManager() {
                     </button>
                 </div>
             </div>
+
+            <section className="bg-accent-light border border-accent/30 rounded-3xl p-5">
+                <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
+                    <div>
+                        <h3 className="text-lg font-bold">
+                            TV Draft Preview
+                        </h3>
+
+                        <p className="text-sm text-text-secondary mt-1">
+                            Send the last saved draft to one paired
+                            TV without publishing a new menu version.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                        <div>
+                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                Location
+                            </label>
+
+                            <select
+                                value={previewLocationId}
+                                onChange={(event) => {
+                                    setPreviewLocationId(
+                                        event.target.value
+                                    );
+
+                                    setPreviewDeviceId('');
+                                }}
+                                disabled={sendingTvPreview}
+                                className="bg-surface border border-border rounded-xl px-4 py-2.5"
+                            >
+                                {MENU_PREVIEW_LOCATIONS.map(
+                                    (location) => (
+                                        <option
+                                            key={location.id}
+                                            value={location.id}
+                                        >
+                                            {location.label}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                Paired TV
+                            </label>
+
+                            <select
+                                value={previewDeviceId}
+                                onChange={(event) =>
+                                    setPreviewDeviceId(
+                                        event.target.value
+                                    )
+                                }
+                                disabled={
+                                    sendingTvPreview
+                                    || previewDeviceIds.length === 0
+                                }
+                                className="bg-surface border border-border rounded-xl px-4 py-2.5"
+                            >
+                                {previewDeviceIds.length === 0 ? (
+                                    <option value="">
+                                        No paired TVs found
+                                    </option>
+                                ) : (
+                                    previewDeviceIds.map(
+                                        (deviceId) => (
+                                            <option
+                                                key={deviceId}
+                                                value={deviceId}
+                                            >
+                                                {deviceId.replace(
+                                                    /_/g,
+                                                    ' '
+                                                )}
+                                            </option>
+                                        )
+                                    )
+                                )}
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleSendToTvPreview}
+                            disabled={
+                                hasUnsavedChanges
+                                || saving
+                                || publishing
+                                || sendingTvPreview
+                                || !previewDeviceId
+                            }
+                            title={
+                                hasUnsavedChanges
+                                    ? 'Save or discard changes before sending the TV preview.'
+                                    : 'Send the saved draft to this paired TV.'
+                            }
+                            className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-full text-xs font-black uppercase tracking-wider transition-colors"
+                        >
+                            {sendingTvPreview
+                                ? 'Sending...'
+                                : 'Send to TV Preview'}
+                        </button>
+                    </div>
+                </div>
+
+                <p className="text-xs text-text-secondary mt-3">
+                    The TV must use matching location and device
+                    values with screen=meat&amp;preview=1.
+                </p>
+            </section>
 
             <section className="bg-bg border border-border rounded-3xl p-5">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

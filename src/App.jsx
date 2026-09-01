@@ -43,7 +43,7 @@ export default function App() {
   const isMeatMenuScreen =
     requestedScreen === 'meat';
 
-  const includeScheduledSpotlights =
+  const isMenuPreview =
     queryParams.get('preview') === '1';
 
   const [manualLayout, setManualLayout] = useState('DEFAULT');
@@ -307,9 +307,8 @@ export default function App() {
       {isMeatMenuScreen ? (
         <MeatMenuDisplay
           activeLocation={activeLocation}
-          includeScheduledSpotlights={
-            includeScheduledSpotlights
-          }
+          deviceId={deviceId}
+          previewMode={isMenuPreview}
         />
       ) : isEvent ? (
         <div className="w-screen h-screen overflow-hidden bg-black select-none">

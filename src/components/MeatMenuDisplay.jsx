@@ -143,7 +143,8 @@ const compareSpotlights = (
 
 export default function MeatMenuDisplay({
     activeLocation,
-    includeScheduledSpotlights = false
+    deviceId,
+    previewMode = false
 }) {
     const [publishedMenu, setPublishedMenu] =
         useState(null);
@@ -161,31 +162,60 @@ export default function MeatMenuDisplay({
         useState(() => Date.now());
 
     useEffect(() => {
-        const menuRef = doc(
-            db,
-            'globalMenus',
-            'meat'
-        );
+        const menuRef = previewMode
+            ? doc(
+                db,
+                'locations',
+                activeLocation,
+                'devices',
+                deviceId,
+                'menuPreviews',
+                'meat'
+            )
+            : doc(
+                db,
+                'globalMenus',
+                'meat'
+            );
 
         const unsubscribe = onSnapshot(
             menuRef,
             (snapshot) => {
                 if (!snapshot.exists()) {
                     setPublishedMenu(null);
-                    setMenuStatus('missing');
+
+                    setMenuStatus(
+                        previewMode
+                            ? 'preview-missing'
+                            : 'missing'
+                    );
+
                     return;
                 }
 
+                const snapshotData = snapshot.data();
+
+                /*
+                 * Accept either a directly stored menu or a preview
+                 * document containing the menu under a menu field.
+                 */
+                const menuData =
+                    previewMode && snapshotData.menu
+                        ? snapshotData.menu
+                        : snapshotData;
+
                 setPublishedMenu({
                     id: snapshot.id,
-                    ...snapshot.data()
+                    ...menuData
                 });
 
                 setMenuStatus('ready');
             },
             (error) => {
                 console.error(
-                    'Unable to load published Meat Menu:',
+                    previewMode
+                        ? 'Unable to load Meat Menu TV preview:'
+                        : 'Unable to load published Meat Menu:',
                     error
                 );
 
@@ -195,7 +225,11 @@ export default function MeatMenuDisplay({
         );
 
         return () => unsubscribe();
-    }, []);
+    }, [
+        activeLocation,
+        deviceId,
+        previewMode
+    ]);
 
     useEffect(() => {
         const globalSpotlightCollection =
@@ -285,7 +319,7 @@ export default function MeatMenuDisplay({
                 spotlight,
                 activeLocation,
                 currentTime,
-                includeScheduledSpotlights
+                previewMode
             )
         )
         .sort(compareSpotlights)[0] || null;
@@ -295,6 +329,21 @@ export default function MeatMenuDisplay({
             <div className="w-screen h-screen bg-[#0d0d0c] text-white flex items-center justify-center">
                 <p className="text-xl font-bold uppercase tracking-widest text-white/70">
                     Loading Meat Menu...
+                </p>
+            </div>
+        );
+    }
+
+    if (menuStatus === 'preview-missing') {
+        return (
+            <div className="w-screen h-screen bg-[#0d0d0c] text-white flex flex-col items-center justify-center text-center px-8">
+                <h1 className="text-4xl font-black uppercase tracking-wider text-[#f4c542]">
+                    TV Preview Not Sent
+                </h1>
+
+                <p className="mt-4 text-xl text-white/75">
+                    Select this TV in the administrator dashboard
+                    and send the current Meat Menu draft.
                 </p>
             </div>
         );
@@ -326,7 +375,7 @@ export default function MeatMenuDisplay({
                 </h1>
 
                 <p className="mt-4 text-xl text-white/75">
-                    The published menu could not be loaded.
+                    The {previewMode ? 'preview' : 'published'} menu could not be loaded.
                 </p>
             </div>
         );
