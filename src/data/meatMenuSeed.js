@@ -6,17 +6,21 @@
  */
 
 export const MEAT_MENU_SEED = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     menuId: 'meat',
-    title: 'MEAT MENU',
-    subtitle: 'Slow-Smoked Texas Barbecue',
+    title: 'MEATS',
+    titleEs: 'CARNES',
+    subtitle: 'TRUE TEXAS BBQ',
 
     sections: [
         {
             id: 'bbq_plates',
-            title: 'BBQ PLATES',
+            title: 'PLATES',
+            titleEs: 'PLATOS',
             subtitle:
-                'Includes two sides, Texas toast, and BBQ sauce',
+                '2 SIDES · TEXAS TOAST · BBQ SAUCE',
+            subtitleEs:
+                '2 GUARNICIONES · PAN TOSTADO · SALSA BBQ',
             order: 10,
             enabled: true,
             items: [
@@ -111,8 +115,12 @@ export const MEAT_MENU_SEED = {
 
         {
             id: 'bbq_sandwiches',
-            title: 'BBQ SANDWICHES',
-            subtitle: '',
+            title: 'SANDWICHES',
+            titleEs: 'SÁNDWICHES',
+            subtitle:
+                'CHOOSE YOUR SMOKED MEAT · EXCEPT RIBS',
+            subtitleEs:
+                'ELIGE TU CARNE · EXCEPTO COSTILLAS',
             order: 20,
             enabled: true,
             items: [
@@ -167,7 +175,11 @@ export const MEAT_MENU_SEED = {
         {
             id: 'family_packs',
             title: 'FAMILY PACKS',
-            subtitle: 'Family-size favorites',
+            titleEs: 'PAQUETES FAMILIARES',
+            subtitle:
+                'WHITE OR WHEAT BREAD · PICKLES · ONIONS · JALAPEÑOS',
+            subtitleEs:
+                'PAN BLANCO O INTEGRAL · PEPINILLOS · CEBOLLA · JALAPEÑOS',
             order: 30,
             enabled: true,
             items: [
@@ -239,8 +251,10 @@ export const MEAT_MENU_SEED = {
 
         {
             id: 'meat_by_pound',
-            title: 'BBQ BY THE POUND',
-            subtitle: 'All meats and sauces are gluten free',
+            title: 'BY THE POUND',
+            titleEs: 'POR LIBRA',
+            subtitle: '',
+            subtitleEs: '',
             order: 40,
             enabled: true,
             items: [
@@ -378,8 +392,10 @@ export const MEAT_MENU_SEED = {
 
         {
             id: 'more_great_eating',
-            title: 'MORE GREAT EATING',
+            title: 'MORE FAVORITES',
+            titleEs: 'MÁS FAVORITOS',
             subtitle: '',
+            subtitleEs: '',
             order: 50,
             enabled: true,
             items: [
@@ -456,8 +472,10 @@ export const MEAT_MENU_SEED = {
 
         {
             id: 'kids_meals',
-            title: "KID'S MEALS",
+            title: 'KIDS',
+            titleEs: 'NIÑOS',
             subtitle: '',
+            subtitleEs: '',
             order: 60,
             enabled: true,
             items: [

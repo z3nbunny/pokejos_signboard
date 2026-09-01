@@ -1,14 +1,69 @@
-import pokejosLogoWhite from '../assets/pokejos-logo-white.png';
-import '@fontsource/bowlby-one-sc';
+import '@fontsource/rye/400.css';
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 
 const DISPLAY_FONT_STYLE = {
-    fontFamily: "'Bowlby One SC', sans-serif"
+    fontFamily: "'Rye', sans-serif"
 };
 
 const BODY_FONT_STYLE = {
     fontFamily:
         "'Atkinson Hyperlegible Next Variable', sans-serif"
+};
+
+const MENU_TYPE_CLASSES = {
+    sectionTitle:
+        'whitespace-nowrap '
+        + 'text-[clamp(18px,1.28cqw,48px)] '
+        + 'font-normal uppercase '
+        + 'tracking-[0.035em] leading-[1.05] '
+        + 'text-[#f4c542]',
+
+    sectionSubtitle:
+        'whitespace-pre-line '
+        + 'text-[clamp(11px,0.7cqw,26px)] '
+        + 'font-semibold tracking-[0.02em] '
+        + 'leading-[1.2]',
+
+    itemName:
+        'text-[clamp(13px,1.04cqw,39px)] '
+        + 'font-bold uppercase '
+        + 'tracking-[0.005em] leading-[1.08]',
+
+    price:
+        'text-[clamp(13px,1.04cqw,39px)] '
+        + 'font-extrabold text-[#f4c542] '
+        + 'tabular-nums leading-none',
+
+    supporting:
+        'text-[clamp(11px,0.78cqw,29px)] '
+        + 'font-medium leading-[1.22] '
+        + 'text-white/95',
+
+    detail:
+        'text-[clamp(11px,0.76cqw,28px)] '
+        + 'font-medium leading-[1.2] '
+        + 'text-white/95',
+
+    optionLabel:
+        'text-[clamp(10px,0.7cqw,26px)] '
+        + 'font-semibold tracking-[0.015em] '
+        + 'leading-[1.15] text-white/90',
+
+    modifierLabel:
+        'text-[clamp(11px,0.84cqw,31px)] '
+        + 'font-bold uppercase '
+        + 'tracking-[0.01em] leading-[1.1] '
+        + 'text-[#f4c542]',
+
+    modifierDescription:
+        'text-[clamp(11px,0.76cqw,28px)] '
+        + 'font-medium leading-[1.2] '
+        + 'text-white/95',
+
+    disclosure:
+        'text-[clamp(10px,0.66cqw,24px)] '
+        + 'font-medium leading-[1.2] '
+        + 'text-white/85'
 };
 
 const DEFAULT_DISPLAY_NOTICES = {
@@ -50,46 +105,6 @@ const DENSE_SECTIONS = new Set([
     'kids_meals'
 ]);
 
-const SECTION_PRESENTATION = {
-    bbq_plates: {
-        title: 'PLATES',
-        titleEs: 'PLATOS',
-        notes: [
-            '2 SIDES · TEXAS TOAST · BBQ SAUCE',
-            '2 GUARNICIONES · PAN TOSTADO · SALSA BBQ'
-        ]
-    },
-    bbq_sandwiches: {
-        title: 'SANDWICHES',
-        titleEs: 'SÁNDWICHES',
-        notes: [
-            'CHOOSE YOUR SMOKED MEAT · EXCEPT RIBS',
-            'ELIGE TU CARNE AHUMADA · EXCEPTO COSTILLAS'
-        ]
-    },
-    family_packs: {
-        title: 'FAMILY PACKS',
-        titleEs: 'PAQUETES FAMILIARES',
-        notes: [
-            'WHITE OR WHEAT BREAD · PICKLES · ONIONS · JALAPEÑOS',
-            'PAN BLANCO O INTEGRAL · PEPINILLOS · CEBOLLA · JALAPEÑOS'
-        ]
-    },
-    kids_meals: {
-        title: 'KIDS',
-        titleEs: 'NIÑOS'
-    },
-    meat_by_pound: {
-        title: 'BY THE POUND',
-        titleEs: 'POR LIBRA',
-        notes: []
-    },
-    more_great_eating: {
-        title: 'MORE FAVORITES',
-        titleEs: 'MÁS FAVORITOS'
-    }
-};
-
 const sortByOrder = (records) =>
     [...(records || [])].sort(
         (firstRecord, secondRecord) =>
@@ -110,98 +125,18 @@ const formatPrice = (priceCents) => {
     return `$${dollarValue.replace(/\.00$/, '')}`;
 };
 
-const formatFamilyDetail = (detail) =>
-    String(detail || '')
-        .replace(
-            /sliced meat or chicken/gi,
-            'MEAT / CARNE'
+const getDisplayedDetails = (item) =>
+    (item.details || [])
+        .map((detail) =>
+            String(detail || '').trim()
         )
-        .replace(
-            /\bof sides\b/gi,
-            'SIDES / GUARNICIONES'
-        )
-        .replace(
-            /\bBBQ sauce\b/gi,
-            'SAUCE / SALSA'
-        )
-        .replace(/\blb\./gi, 'LB')
-        .replace(/\bpints?\b/gi, 'PT')
-        .replace(/\bquarts?\b/gi, 'QT');
+        .filter(Boolean);
 
-const getDisplayedDetails = (
-    item,
-    sectionId
-) => {
-    const details = item.details || [];
+const getDisplayedDescription = (item) =>
+    String(item.description || '').trim();
 
-    if (sectionId !== 'family_packs') {
-        return details;
-    }
-
-    return details
-        .filter(
-            (detail) =>
-                !/bread|pickle|onion|jalape/i.test(
-                    detail
-                )
-        )
-        .map(formatFamilyDetail);
-};
-
-const getDisplayedDescription = (
-    item,
-    sectionId
-) => {
-    const description =
-        String(item.description || '');
-
-    if (sectionId === 'family_packs') {
-        const servingRange = description.match(
-            /\d+\s*[-–—]\s*\d+/
-        );
-
-        if (servingRange) {
-            return (
-                'SERVES / RINDE '
-                + servingRange[0].replace(
-                    /\s*[-–—]\s*/,
-                    '–'
-                )
-            );
-        }
-
-        return description;
-    }
-
-    if (
-        sectionId === 'bbq_plates'
-        && /^choose (one|two|three) smoked meats?$/i
-            .test(description)
-    ) {
-        return '';
-    }
-
-    return description;
-};
-
-const getChickenSizeLabel = (label) => {
-    const normalizedLabel =
-        String(label || '').toLowerCase();
-
-    if (normalizedLabel.includes('¼')) {
-        return '¼';
-    }
-
-    if (normalizedLabel.includes('½')) {
-        return '½';
-    }
-
-    if (normalizedLabel.includes('whole')) {
-        return 'WHOLE';
-    }
-
-    return String(label || 'OPTION').toUpperCase();
-};
+const getDisplayedPriceLabel = (priceOption) =>
+    String(priceOption.label || '').trim();
 
 const buildSectionColumns = (sections) => {
     const visibleSections = sortByOrder(
@@ -274,16 +209,10 @@ function MenuItem({
             : null;
 
     const displayedDescription =
-        getDisplayedDescription(
-            item,
-            sectionId
-        );
+        getDisplayedDescription(item);
 
     const displayedDetails =
-        getDisplayedDetails(
-            item,
-            sectionId
-        );
+        getDisplayedDetails(item);
 
     const isChickenRow =
         sectionId === 'meat_by_pound'
@@ -301,7 +230,11 @@ function MenuItem({
     if (isChickenRow) {
         return (
             <article className="flex items-baseline justify-between gap-[0.7cqw]">
-                <h3 className="min-w-0 flex flex-wrap items-baseline gap-x-[0.25cqw] text-[clamp(13px,1.08cqw,40px)] font-extrabold uppercase tracking-[-0.025em] leading-none">
+                <h3 className={
+                    MENU_TYPE_CLASSES.itemName
+                    + ' min-w-0 flex flex-wrap '
+                    + 'items-baseline gap-x-[0.25cqw]'
+                }>
                     <span>{item.name}</span>
 
                     <span className="whitespace-nowrap">
@@ -319,14 +252,17 @@ function MenuItem({
                 </h3>
 
                 <div className="shrink-0 flex items-baseline gap-[0.7cqw]">
-                    <span className="text-[clamp(9px,0.67cqw,25px)] font-bold uppercase tracking-wide text-white/90">
-                        {priceOptions.map(
-                            (priceOption) =>
-                                getChickenSizeLabel(
-                                    priceOption.label
-                                )
-                        ).join(' · ')}
-                    </span>
+                    {priceOptions.some(
+                        (priceOption) =>
+                            getDisplayedPriceLabel(priceOption)
+                    ) && (
+                            <span className="text-[clamp(9px,0.67cqw,25px)] font-semibold tracking-wide text-white/90">
+                                {priceOptions
+                                    .map(getDisplayedPriceLabel)
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </span>
+                        )}
 
                     <span className="text-[clamp(12px,0.92cqw,34px)] font-extrabold text-[#f4c542] tabular-nums">
                         {priceOptions.map(
@@ -392,12 +328,12 @@ function MenuItem({
                         {singlePrice.label
                             && sectionId
                             !== 'meat_by_pound' && (
-                                <span className="text-[clamp(9px,0.66cqw,24px)] text-white/90 uppercase tracking-wide">
+                                <span className={MENU_TYPE_CLASSES.optionLabel}>
                                     {singlePrice.label}
                                 </span>
                             )}
 
-                        <span className="text-[clamp(13px,1.08cqw,40px)] font-extrabold text-[#f4c542] tabular-nums">
+                        <span className={MENU_TYPE_CLASSES.price}>
                             {formatPrice(
                                 singlePrice.priceCents
                             )}
@@ -407,7 +343,7 @@ function MenuItem({
             </div>
 
             {displayedDescription && (
-                <p className="text-[clamp(11px,0.78cqw,29px)] leading-[1.18] text-white/95">
+                <p className={MENU_TYPE_CLASSES.supporting}>
                     {displayedDescription}
                 </p>
             )}
@@ -427,7 +363,10 @@ function MenuItem({
                                     `${item.id}-detail-`
                                     + detailIndex
                                 }
-                                className="flex gap-[0.32cqw] text-[clamp(11px,0.76cqw,28px)] leading-[1.14] text-white/95"
+                                className={
+                                    MENU_TYPE_CLASSES.detail
+                                    + ' flex gap-[0.32cqw]'
+                                }
                             >
                                 <span
                                     aria-hidden="true"
@@ -451,12 +390,13 @@ function MenuItem({
                                 key={priceOption.id}
                                 className="flex items-baseline justify-between gap-[0.5cqw]"
                             >
-                                <span className="text-[clamp(10px,0.72cqw,27px)] uppercase tracking-wide text-white/90">
-                                    {priceOption.label
-                                        || 'Option'}
+                                <span className={MENU_TYPE_CLASSES.optionLabel}>
+                                    {getDisplayedPriceLabel(
+                                        priceOption
+                                    )}
                                 </span>
 
-                                <span className="text-[clamp(12px,0.9cqw,34px)] font-extrabold text-[#f4c542] tabular-nums">
+                                <span className={MENU_TYPE_CLASSES.price}>
                                     {formatPrice(
                                         priceOption
                                             .priceCents
@@ -474,29 +414,26 @@ function MenuItem({
 function SectionHeading({
     section
 }) {
-    const presentation =
-        SECTION_PRESENTATION[section.id];
-
     const title =
-        presentation?.title
-        || section.title;
+        String(section.title || '').trim();
 
     const titleEs =
-        presentation?.titleEs;
+        String(section.titleEs || '').trim();
 
-    const notes =
-        presentation?.notes
-        || (
-            section.subtitle
-                ? [section.subtitle]
-                : []
-        );
+    const notes = [
+        section.subtitle,
+        section.subtitleEs
+    ]
+        .map((note) =>
+            String(note || '').trim()
+        )
+        .filter(Boolean);
 
     return (
         <header className="mb-[0.62cqw] text-center">
             <h2
                 style={DISPLAY_FONT_STYLE}
-                className="whitespace-nowrap text-[clamp(14px,1.08cqw,41px)] font-normal uppercase tracking-[0.025em] leading-none text-[#f4c542]"
+                className={MENU_TYPE_CLASSES.sectionTitle}
             >
                 <span>{title}</span>
 
@@ -509,7 +446,9 @@ function SectionHeading({
                             |
                         </span>
 
-                        <span>{titleEs}</span>
+                        <span lang="es">
+                            {titleEs}
+                        </span>
                     </>
                 )}
             </h2>
@@ -518,15 +457,18 @@ function SectionHeading({
                 <div className="mt-[0.34cqw] space-y-[0.08cqw]">
                     {notes.map((note, index) => (
                         <p
-                            key={note}
+                            key={`${index}-${note}`}
+                            lang={
+                                index === 1
+                                    ? 'es'
+                                    : undefined
+                            }
                             className={
-                                'text-[clamp(10px,0.66cqw,24px)] '
-                                + 'font-bold uppercase '
-                                + 'tracking-[0.08em] '
+                                MENU_TYPE_CLASSES.sectionSubtitle
                                 + (
                                     index === 0
-                                        ? 'text-white/95'
-                                        : 'text-white/90'
+                                        ? ' text-white/95'
+                                        : ' text-white/90'
                                 )
                             }
                         >
@@ -539,78 +481,115 @@ function SectionHeading({
     );
 }
 
-function SandwichSummary({ section }) {
-    const sandwichItem = sortByOrder(
-        section.items
-    ).find(
-        (item) => item.enabled !== false
+function MenuModifier({
+    modifier
+}) {
+    const label =
+        String(modifier.label || '').trim();
+
+    const labelEs =
+        String(modifier.labelEs || '').trim();
+
+    const description =
+        String(
+            modifier.description || ''
+        ).trim();
+
+    const descriptionEs =
+        String(
+            modifier.descriptionEs || ''
+        ).trim();
+
+    const numericPrice =
+        Number(modifier.priceCents);
+
+    const hasPrice =
+        Number.isFinite(numericPrice)
+        && numericPrice > 0;
+
+    return (
+        <div className="flex items-baseline justify-between gap-[0.5cqw]">
+            <div className="min-w-0">
+                <p className={MENU_TYPE_CLASSES.modifierLabel}>
+                    <span>{label}</span>
+
+                    {labelEs && (
+                        <>
+                            <span
+                                aria-hidden="true"
+                                className="mx-[0.25cqw] text-white/45"
+                            >
+                                |
+                            </span>
+
+                            <span lang="es">
+                                {labelEs}
+                            </span>
+                        </>
+                    )}
+                </p>
+
+                {description && (
+                    <p
+                        className={
+                            MENU_TYPE_CLASSES
+                                .modifierDescription
+                        }
+                    >
+                        {description}
+                    </p>
+                )}
+
+                {descriptionEs && (
+                    <p
+                        lang="es"
+                        className={
+                            MENU_TYPE_CLASSES
+                                .modifierDescription
+                            + ' mt-[0.08cqw]'
+                        }
+                    >
+                        {descriptionEs}
+                    </p>
+                )}
+            </div>
+
+            {hasPrice && (
+                <span
+                    className={
+                        MENU_TYPE_CLASSES.price
+                        + ' shrink-0'
+                    }
+                >
+                    +
+                    {formatPrice(numericPrice)}
+                </span>
+            )}
+        </div>
     );
+}
 
-    const basePrice = sandwichItem
-        ? sortByOrder(
-            sandwichItem.priceOptions
-        )[0]
-        : null;
-
-    const comboModifier = sortByOrder(
-        section.modifiers
-    ).find(
-        (modifier) =>
-            modifier.enabled !== false
-            && /side|drink|combo/i.test(
-                modifier.label || ''
-            )
-    );
-
-    if (!basePrice) {
+function MenuModifierList({
+    modifiers,
+    className = ''
+}) {
+    if (modifiers.length === 0) {
         return null;
     }
 
     return (
-        <div className="space-y-[0.48cqw]">
-            <div className="flex items-baseline justify-between gap-[0.75cqw]">
-                <p className="text-[clamp(11px,0.78cqw,29px)] font-extrabold uppercase tracking-[0.03em] text-white">
-                    Base Price
-                    <span className="mx-[0.28cqw] text-white/45">
-                        |
-                    </span>
-                    <span lang="es">
-                        Precio Base
-                    </span>
-                </p>
-
-                <span className="shrink-0 text-[clamp(14px,1.1cqw,41px)] font-extrabold text-[#f4c542]">
-                    {formatPrice(
-                        basePrice.priceCents
-                    )}
-                </span>
-            </div>
-
-            {comboModifier && (
-                <div className="border-t border-[#f4c542]/35 pt-[0.4cqw] flex items-start justify-between gap-[0.75cqw]">
-                    <div>
-                        <p className="text-[clamp(10px,0.72cqw,27px)] font-extrabold uppercase text-[#f4c542]">
-                            Add a Side &amp; Drink,
-                            or 2 Sides
-                        </p>
-
-                        <p
-                            lang="es"
-                            className="mt-[0.08cqw] text-[clamp(9px,0.62cqw,23px)] font-bold uppercase leading-[1.12] text-white/90"
-                        >
-                            Agrega una guarnición y bebida,
-                            o 2 guarniciones
-                        </p>
-                    </div>
-
-                    <span className="shrink-0 text-[clamp(12px,0.88cqw,33px)] font-extrabold text-[#f4c542]">
-                        +
-                        {formatPrice(
-                            comboModifier.priceCents
-                        )}
-                    </span>
-                </div>
-            )}
+        <div
+            className={
+                'space-y-[0.26cqw] '
+                + className
+            }
+        >
+            {modifiers.map((modifier) => (
+                <MenuModifier
+                    key={modifier.id}
+                    modifier={modifier}
+                />
+            ))}
         </div>
     );
 }
@@ -630,13 +609,75 @@ function MenuSection({
     ).filter(
         (modifier) =>
             modifier.enabled !== false
-            && !/brisket/i.test(
-                modifier.label || ''
-            )
     );
+
+    const visibleItemIds = new Set(
+        visibleItems.map((item) => item.id)
+    );
+
+    const startModifiers =
+        visibleModifiers.filter(
+            (modifier) =>
+                modifier.placement === 'start'
+        );
+
+    const afterItemModifiers =
+        visibleModifiers.filter(
+            (modifier) =>
+                modifier.placement === 'after_item'
+                && visibleItemIds.has(
+                    modifier.afterItemId
+                )
+        );
+
+    /*
+     * Existing modifiers and modifiers whose target item is
+     * unavailable fall back to the section end.
+     */
+    const endModifiers =
+        visibleModifiers.filter((modifier) => {
+            if (modifier.placement === 'start') {
+                return false;
+            }
+
+            if (
+                modifier.placement === 'after_item'
+                && visibleItemIds.has(
+                    modifier.afterItemId
+                )
+            ) {
+                return false;
+            }
+
+            return true;
+        });
+
+    const modifiersByItemId = new Map();
+
+    afterItemModifiers.forEach((modifier) => {
+        const currentModifiers =
+            modifiersByItemId.get(
+                modifier.afterItemId
+            ) || [];
+
+        modifiersByItemId.set(
+            modifier.afterItemId,
+            [
+                ...currentModifiers,
+                modifier
+            ]
+        );
+    });
 
     const dense =
         DENSE_SECTIONS.has(section.id);
+
+    const itemSpacingClass =
+        section.id === 'meat_by_pound'
+            ? 'space-y-[0.14cqw]'
+            : dense
+                ? 'space-y-[0.38cqw]'
+                : 'space-y-[0.56cqw]';
 
     const sizeClass =
         SECTION_SIZE_CLASSES[section.id]
@@ -648,66 +689,64 @@ function MenuSection({
         >
             <SectionHeading section={section} />
 
-            {section.id === 'bbq_sandwiches' ? (
-                <SandwichSummary section={section} />
-            ) : visibleItems.length > 0 ? (
-                <div
-                    className={
-                        dense
-                            ? 'space-y-[0.38cqw]'
-                            : 'space-y-[0.56cqw]'
-                    }
-                >
-                    {visibleItems.map((item) => (
-                        <MenuItem
-                            key={item.id}
-                            item={item}
-                            dense={dense}
-                            sectionId={section.id}
-                        />
-                    ))}
+            <MenuModifierList
+                modifiers={startModifiers}
+                className={
+                    'mb-[0.5cqw] border-y '
+                    + 'border-[#f4c542]/35 '
+                    + 'py-[0.34cqw]'
+                }
+            />
+
+            {visibleItems.length > 0 ? (
+                <div className={itemSpacingClass}>
+                    {visibleItems.map((item) => {
+                        const itemModifiers =
+                            modifiersByItemId.get(
+                                item.id
+                            ) || [];
+
+                        return (
+                            <div
+                                key={item.id}
+                                className="space-y-[0.28cqw]"
+                            >
+                                <MenuItem
+                                    item={item}
+                                    dense={dense}
+                                    sectionId={
+                                        section.id
+                                    }
+                                />
+
+                                <MenuModifierList
+                                    modifiers={
+                                        itemModifiers
+                                    }
+                                    className={
+                                        'border-t '
+                                        + 'border-[#f4c542]/25 '
+                                        + 'pt-[0.3cqw]'
+                                    }
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             ) : (
-                <p className="text-[clamp(10px,0.72cqw,27px)] italic text-white/85">
+                <p className={MENU_TYPE_CLASSES.supporting}>
                     No items currently available.
                 </p>
             )}
 
-            {section.id !== 'bbq_sandwiches'
-                && visibleModifiers.length > 0 && (
-                    <div className="mt-[0.6cqw] border-t border-[#f4c542]/35 pt-[0.42cqw] space-y-[0.2cqw]">
-                        {visibleModifiers.map(
-                            (modifier) => (
-                                <div
-                                    key={modifier.id}
-                                    className="flex items-baseline justify-between gap-[0.5cqw]"
-                                >
-                                    <div>
-                                        <p className="text-[clamp(10px,0.72cqw,27px)] font-extrabold uppercase text-[#f4c542]">
-                                            {modifier.label}
-                                        </p>
-
-                                        {modifier.description && (
-                                            <p className="text-[clamp(9px,0.66cqw,24px)] leading-[1.15] text-white/90">
-                                                {
-                                                    modifier
-                                                        .description
-                                                }
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <span className="shrink-0 text-[clamp(12px,0.88cqw,33px)] font-extrabold text-[#f4c542]">
-                                        +
-                                        {formatPrice(
-                                            modifier.priceCents
-                                        )}
-                                    </span>
-                                </div>
-                            )
-                        )}
-                    </div>
-                )}
+            <MenuModifierList
+                modifiers={endModifiers}
+                className={
+                    'mt-[0.6cqw] border-t '
+                    + 'border-[#f4c542]/35 '
+                    + 'pt-[0.42cqw]'
+                }
+            />
         </section>
     );
 }
@@ -856,7 +895,13 @@ function MenuNotices({ menu }) {
                 </p>
             </div>
 
-            <footer className="shrink-0 grid grid-cols-2 gap-[1.5cqw] pt-[0.2cqw] text-[clamp(8px,0.49cqw,18px)] font-semibold leading-[1.12] text-white/75">
+            <footer
+                className={
+                    MENU_TYPE_CLASSES.disclosure
+                    + ' shrink-0 grid grid-cols-2 '
+                    + 'gap-[1.5cqw] pt-[0.28cqw]'
+                }
+            >
                 <p>{notices.glutenDisclaimer}</p>
 
                 <p lang="es" className="text-right">
@@ -888,41 +933,8 @@ export default function MeatMenuPreview({
             className="relative w-full h-full overflow-hidden bg-[#0d0d0c] text-white [container-type:inline-size]"
         >
             <div className="absolute inset-[1.35%] flex flex-col">
-                <header className="shrink-0 grid grid-cols-[1fr_1.15fr_1fr] items-center gap-[1.35cqw] min-h-[4.1cqw]">
-                    <p
-                        style={DISPLAY_FONT_STYLE}
-                        className="text-[clamp(14px,1.22cqw,46px)] font-normal uppercase tracking-[0.025em] leading-none text-[#f4c542]"
-                    >
-                        Meats
-
-                        <span
-                            aria-hidden="true"
-                            className="mx-[0.38cqw] text-white/40"
-                        >
-                            |
-                        </span>
-
-                        Carnes
-                    </p>
-
-                    <div className="flex items-center justify-center">
-                        <img
-                            src={pokejosLogoWhite}
-                            alt="Pok-E-Jo's Smokehouse"
-                            className="w-[17cqw] h-[4.6cqw] object-contain"
-                        />
-                    </div>
-
-                    <p
-                        style={DISPLAY_FONT_STYLE}
-                        className="text-right text-[clamp(10px,0.86cqw,32px)] font-normal uppercase tracking-[0.08em] leading-none text-white/95"
-                    >
-                        True Texas BBQ
-                    </p>
-                </header>
-
                 {visibleSectionCount > 0 ? (
-                    <main className="flex-1 min-h-0 grid grid-cols-[0.96fr_1.08fr_1.12fr] gap-[1.7cqw] pt-[0.55cqw]">
+                    <main className="flex-1 min-h-0 grid grid-cols-[1fr_1.06fr_1.04fr] gap-[1.7cqw] pt-[0.15cqw]">
                         {columns.map(
                             (column, columnIndex) => (
                                 <div

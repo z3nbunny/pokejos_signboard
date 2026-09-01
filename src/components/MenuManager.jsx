@@ -805,6 +805,7 @@ function MenuItemEditor({
 
 function MenuModifierEditor({
     sectionId,
+    sectionItems,
     modifier,
     modifierIndex,
     modifierCount,
@@ -812,6 +813,61 @@ function MenuModifierEditor({
     onMoveModifier,
     onDeleteModifier
 }) {
+    const targetItemExists =
+        (sectionItems || []).some(
+            (item) =>
+                item.id === modifier.afterItemId
+        );
+
+    const placementValue =
+        modifier.placement === 'start'
+            ? 'start'
+            : (
+                modifier.placement === 'after_item'
+                && targetItemExists
+            )
+                ? `after:${modifier.afterItemId}`
+                : 'end';
+
+    const handlePlacementChange = (event) => {
+        const nextPlacement =
+            event.target.value;
+
+        if (
+            nextPlacement.startsWith('after:')
+        ) {
+            onModifierChange(
+                sectionId,
+                modifier.id,
+                'placement',
+                'after_item'
+            );
+
+            onModifierChange(
+                sectionId,
+                modifier.id,
+                'afterItemId',
+                nextPlacement.slice(6)
+            );
+
+            return;
+        }
+
+        onModifierChange(
+            sectionId,
+            modifier.id,
+            'placement',
+            nextPlacement
+        );
+
+        onModifierChange(
+            sectionId,
+            modifier.id,
+            'afterItemId',
+            ''
+        );
+    };
+
     return (
         <article
             className={`border rounded-2xl p-4 space-y-4 ${modifier.enabled
@@ -901,10 +957,10 @@ function MenuModifierEditor({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_10rem] gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_10rem] gap-4">
                 <div>
                     <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                        Customer-Facing Label
+                        English Customer Label
                     </label>
 
                     <input
@@ -924,13 +980,32 @@ function MenuModifierEditor({
 
                 <div>
                     <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                        Spanish Customer Label
+                    </label>
+
+                    <input
+                        type="text"
+                        value={modifier.labelEs || ''}
+                        placeholder="Optional Spanish label"
+                        onChange={(event) =>
+                            onModifierChange(
+                                sectionId,
+                                modifier.id,
+                                'labelEs',
+                                event.target.value
+                            )
+                        }
+                        className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
                         Price
                     </label>
 
                     <PriceInput
-                        priceCents={
-                            modifier.priceCents
-                        }
+                        priceCents={modifier.priceCents}
                         onChange={(priceCents) =>
                             onModifierChange(
                                 sectionId,
@@ -943,25 +1018,80 @@ function MenuModifierEditor({
                 </div>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                        English Supporting Text
+                    </label>
+
+                    <input
+                        type="text"
+                        value={modifier.description || ''}
+                        placeholder="Example: Charged once per plate"
+                        onChange={(event) =>
+                            onModifierChange(
+                                sectionId,
+                                modifier.id,
+                                'description',
+                                event.target.value
+                            )
+                        }
+                        className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                        Spanish Supporting Text
+                    </label>
+
+                    <input
+                        type="text"
+                        value={modifier.descriptionEs || ''}
+                        placeholder="Optional Spanish supporting text"
+                        onChange={(event) =>
+                            onModifierChange(
+                                sectionId,
+                                modifier.id,
+                                'descriptionEs',
+                                event.target.value
+                            )
+                        }
+                        className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                    />
+                </div>
+            </div>
+
             <div>
                 <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                    Internal Explanation
+                    Display Position
                 </label>
 
-                <input
-                    type="text"
-                    value={modifier.description || ''}
-                    placeholder="Example: Charged once per plate"
-                    onChange={(event) =>
-                        onModifierChange(
-                            sectionId,
-                            modifier.id,
-                            'description',
-                            event.target.value
-                        )
-                    }
+                <select
+                    value={placementValue}
+                    onChange={handlePlacementChange}
                     className="w-full bg-bg border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
-                />
+                >
+                    <option value="start">
+                        Before the first item
+                    </option>
+
+                    {(sectionItems || []).map((item) => (
+                        <option
+                            key={item.id}
+                            value={`after:${item.id}`}
+                        >
+                            After {item.name}
+                            {item.enabled === false
+                                ? ' (hidden)'
+                                : ''}
+                        </option>
+                    ))}
+
+                    <option value="end">
+                        End of section
+                    </option>
+                </select>
             </div>
 
             <div className="rounded-xl bg-amber-50 border border-amber-300 p-3">
@@ -1057,7 +1187,7 @@ function MenuSectionEditor({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                Section Title
+                                Section Title — English
                             </label>
 
                             <input
@@ -1076,16 +1206,54 @@ function MenuSectionEditor({
 
                         <div>
                             <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                Section Subtitle
+                                Section Title — Spanish
                             </label>
 
                             <input
                                 type="text"
+                                value={section.titleEs || ''}
+                                onChange={(event) =>
+                                    onSectionChange(
+                                        section.id,
+                                        'titleEs',
+                                        event.target.value
+                                    )
+                                }
+                                className="w-full bg-surface border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                Section Instructions — English
+                            </label>
+
+                            <textarea
+                                rows="2"
                                 value={section.subtitle || ''}
                                 onChange={(event) =>
                                     onSectionChange(
                                         section.id,
                                         'subtitle',
+                                        event.target.value
+                                    )
+                                }
+                                className="w-full bg-surface border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                Section Instructions — Spanish
+                            </label>
+
+                            <textarea
+                                rows="2"
+                                value={section.subtitleEs || ''}
+                                onChange={(event) =>
+                                    onSectionChange(
+                                        section.id,
+                                        'subtitleEs',
                                         event.target.value
                                     )
                                 }
@@ -1140,6 +1308,9 @@ function MenuSectionEditor({
                                             }
                                             sectionId={
                                                 section.id
+                                            }
+                                            sectionItems={
+                                                section.items || []
                                             }
                                             modifier={
                                                 modifier
@@ -2459,24 +2630,61 @@ export default function MenuManager() {
         draftMenu.sections.map((section) => ({
             ...section,
             title: section.title.trim(),
+            titleEs:
+                section.titleEs?.trim() || '',
             subtitle:
                 section.subtitle?.trim() || '',
+            subtitleEs:
+                section.subtitleEs?.trim() || '',
             modifiers:
                 (
                     section.modifiers || []
                 ).map(
-                    (modifier, index) => ({
-                        ...modifier,
-                        label:
-                            modifier.label.trim(),
-                        description:
-                            modifier.description?.trim()
-                            || '',
-                        bulkPriceEligible: false,
-                        enabled:
-                            modifier.enabled !== false,
-                        order: (index + 1) * 10
-                    })
+                    (modifier, index) => {
+                        const targetItemExists =
+                            (
+                                section.items || []
+                            ).some(
+                                (item) =>
+                                    item.id
+                                    === modifier.afterItemId
+                            );
+
+                        const placement =
+                            modifier.placement === 'start'
+                                ? 'start'
+                                : (
+                                    modifier.placement
+                                    === 'after_item'
+                                    && targetItemExists
+                                )
+                                    ? 'after_item'
+                                    : 'end';
+
+                        return {
+                            ...modifier,
+                            label:
+                                modifier.label.trim(),
+                            labelEs:
+                                modifier.labelEs?.trim()
+                                || '',
+                            description:
+                                modifier.description?.trim()
+                                || '',
+                            descriptionEs:
+                                modifier.descriptionEs?.trim()
+                                || '',
+                            placement,
+                            afterItemId:
+                                placement === 'after_item'
+                                    ? modifier.afterItemId
+                                    : '',
+                            bulkPriceEligible: false,
+                            enabled:
+                                modifier.enabled !== false,
+                            order: (index + 1) * 10
+                        };
+                    }
                 ),
             items: (section.items || []).map(
                 (item) => ({
@@ -2558,6 +2766,8 @@ export default function MenuManager() {
                 ),
                 {
                     title: draftMenu.title.trim(),
+                    titleEs:
+                        draftMenu.titleEs?.trim() || '',
                     subtitle:
                         draftMenu.subtitle?.trim() || '',
                     displayNotices: {
@@ -2682,6 +2892,10 @@ export default function MenuManager() {
             const previewMenu = {
                 title: String(
                     storedDraft.title || ''
+                ).trim(),
+
+                titleEs: String(
+                    storedDraft.titleEs || ''
                 ).trim(),
 
                 subtitle: String(
@@ -2890,6 +3104,10 @@ export default function MenuManager() {
                         const publishedMenu = {
                             title: String(
                                 storedDraft.title || ''
+                            ).trim(),
+
+                            titleEs: String(
+                                storedDraft.titleEs || ''
                             ).trim(),
 
                             subtitle: String(
@@ -3357,10 +3575,10 @@ export default function MenuManager() {
             </section>
 
             <section className="bg-bg border border-border rounded-3xl p-5">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
                         <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                            Menu Title
+                            Menu Title — English
                         </label>
 
                         <input
@@ -3378,7 +3596,25 @@ export default function MenuManager() {
 
                     <div>
                         <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                            Menu Subtitle
+                            Menu Title — Spanish
+                        </label>
+
+                        <input
+                            type="text"
+                            value={draftMenu.titleEs || ''}
+                            onChange={(event) =>
+                                updateMenuField(
+                                    'titleEs',
+                                    event.target.value
+                                )
+                            }
+                            className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                            Menu Tagline
                         </label>
 
                         <input
