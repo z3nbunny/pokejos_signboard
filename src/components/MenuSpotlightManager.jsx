@@ -15,6 +15,7 @@ import {
 
 import { db } from '../firebase';
 import { useAuth } from '../contexts/useAuth';
+import ImageFramingEditor from './ImageFramingEditor';
 
 const LOCATIONS = [
     { id: 'brodie', label: 'Brodie' },
@@ -22,8 +23,72 @@ const LOCATIONS = [
     { id: 'round_rock', label: 'Round Rock' }
 ];
 
+const SPOTLIGHT_LAYOUT_MODES = new Set([
+    'text',
+    'image',
+    'image_text'
+]);
+
+const DEFAULT_IMAGE_FRAMING = {
+    zoom: 1,
+    x: 50,
+    y: 50
+};
+
+const normalizeSpotlightLayoutMode = (value) =>
+    SPOTLIGHT_LAYOUT_MODES.has(value)
+        ? value
+        : 'text';
+
+const normalizeFramingNumber = (
+    value,
+    fallback,
+    minimum,
+    maximum
+) => {
+    const numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+        return fallback;
+    }
+
+    return Math.min(
+        maximum,
+        Math.max(minimum, numericValue)
+    );
+};
+
+const normalizeSpotlightImageFraming = (
+    framing
+) => ({
+    zoom: normalizeFramingNumber(
+        framing?.zoom,
+        1,
+        1,
+        3
+    ),
+    x: normalizeFramingNumber(
+        framing?.x,
+        50,
+        0,
+        100
+    ),
+    y: normalizeFramingNumber(
+        framing?.y,
+        50,
+        0,
+        100
+    )
+});
+
 const createLaborDaySpotlight = (id) => ({
     id,
+    layoutMode: 'text',
+    imageUrl: '',
+    imageAlt: '',
+    imageFraming: {
+        ...DEFAULT_IMAGE_FRAMING
+    },
     label: 'Labor Day Weekend',
     labelEs: 'Especial del Día del Trabajo',
     title: 'Full Rack of Ribs',
@@ -74,6 +139,16 @@ const snapshotToSpotlight = (snapshot) => {
 
     return {
         id: snapshot.id,
+        layoutMode:
+            normalizeSpotlightLayoutMode(
+                data.layoutMode
+            ),
+        imageUrl: data.imageUrl || '',
+        imageAlt: data.imageAlt || '',
+        imageFraming:
+            normalizeSpotlightImageFraming(
+                data.imageFraming
+            ),
         label: data.label || '',
         labelEs: data.labelEs || '',
         title: data.title || '',
@@ -269,13 +344,20 @@ export default function MenuSpotlightManager({
     ]);
 
     const updateDraft = (field, value) => {
-        const nextDraft = {
-            ...draft,
-            [field]: value
-        };
+        setDraft((currentDraft) => {
+            if (!currentDraft) {
+                return currentDraft;
+            }
 
-        setDraft(nextDraft);
-        onPreviewChange(nextDraft);
+            const nextDraft = {
+                ...currentDraft,
+                [field]: value
+            };
+
+            onPreviewChange(nextDraft);
+
+            return nextDraft;
+        });
 
         setDirty(true);
         setMessage('');
@@ -373,6 +455,23 @@ export default function MenuSpotlightManager({
             return;
         }
 
+        const layoutMode =
+            normalizeSpotlightLayoutMode(
+                draft.layoutMode
+            );
+
+        if (
+            layoutMode !== 'text'
+            && !String(
+                draft.imageUrl || ''
+            ).trim()
+        ) {
+            setMessage(
+                'Choose an image before saving this layout.'
+            );
+            return;
+        }
+
         if (
             !Number.isInteger(draft.priceCents)
             || draft.priceCents < 0
@@ -415,6 +514,19 @@ export default function MenuSpotlightManager({
                     draft.id
                 ),
                 {
+                    layoutMode,
+                    imageUrl:
+                        String(
+                            draft.imageUrl || ''
+                        ).trim(),
+                    imageAlt:
+                        String(
+                            draft.imageAlt || ''
+                        ).trim(),
+                    imageFraming:
+                        normalizeSpotlightImageFraming(
+                            draft.imageFraming
+                        ),
                     label: draft.label.trim(),
                     labelEs:
                         draft.labelEs.trim(),
@@ -594,6 +706,142 @@ export default function MenuSpotlightManager({
                         </div>
                     ) : (
                         <div className="space-y-5">
+                            <div className="space-y-3">
+                                <div>
+                                    <h4 className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+                                        Spotlight Layout
+                                    </h4>
+
+                                    <p className="mt-1 text-sm text-text-secondary">
+                                        Choose how this Spotlight will appear on the menu.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {[
+                                        {
+                                            value: 'text',
+                                            label: 'Text Only',
+                                            description:
+                                                'Use the branded yellow text card.'
+                                        },
+                                        {
+                                            value: 'image',
+                                            label: 'Image Only',
+                                            description:
+                                                'Display a finished promotional graphic.'
+                                        },
+                                        {
+                                            value: 'image_text',
+                                            label: 'Image + Text',
+                                            description:
+                                                'Place readable menu copy over a photo.'
+                                        }
+                                    ].map((option) => {
+                                        const selected =
+                                            draft.layoutMode
+                                            === option.value;
+
+                                        return (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() =>
+                                                    updateDraft(
+                                                        'layoutMode',
+                                                        option.value
+                                                    )
+                                                }
+                                                className={
+                                                    'rounded-2xl border p-4 text-left transition-colors '
+                                                    + (
+                                                        selected
+                                                            ? 'border-accent bg-accent/10 ring-2 ring-accent'
+                                                            : 'border-border bg-surface hover:bg-border'
+                                                    )
+                                                }
+                                            >
+                                                <span className="block font-bold">
+                                                    {option.label}
+                                                </span>
+
+                                                <span className="mt-1 block text-sm text-text-secondary">
+                                                    {option.description}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {draft.layoutMode !== 'text' && (
+                                <div className="space-y-4">
+                                    <ImageFramingEditor
+                                        label="Spotlight Image"
+                                        imageUrl={
+                                            draft.imageUrl
+                                            || ''
+                                        }
+                                        imageAlt={
+                                            draft.imageAlt
+                                            || draft.title
+                                        }
+                                        framing={
+                                            draft.imageFraming
+                                        }
+                                        aspectRatio="2 / 1"
+                                        disabled={saving}
+                                        onImageChange={(
+                                            imageUrl
+                                        ) =>
+                                            updateDraft(
+                                                'imageUrl',
+                                                imageUrl
+                                            )
+                                        }
+                                        onFramingChange={(
+                                            imageFraming
+                                        ) =>
+                                            updateDraft(
+                                                'imageFraming',
+                                                imageFraming
+                                            )
+                                        }
+                                    />
+
+                                    <div>
+                                        <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                            Image Description
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={
+                                                draft.imageAlt
+                                                || ''
+                                            }
+                                            onChange={(event) =>
+                                                updateDraft(
+                                                    'imageAlt',
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Example: A full rack of smoked pork ribs"
+                                            className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
+                                        />
+
+                                        <p className="mt-1 text-[11px] text-text-secondary">
+                                            Briefly describe the image for accessibility and administration.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {draft.layoutMode === 'image' && (
+                                <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
+                                    The saved headline, descriptions and price identify this Spotlight in the dashboard, but they will not appear over an Image Only creative.
+                                </p>
+                            )}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {[
                                     ['label', 'English Label'],

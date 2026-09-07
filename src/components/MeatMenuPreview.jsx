@@ -12,8 +12,7 @@ const BODY_FONT_STYLE = {
 
 const MENU_TYPE_CLASSES = {
     sectionTitle:
-        'whitespace-nowrap '
-        + 'text-[clamp(18px,1.28cqw,48px)] '
+        'text-[clamp(18px,1.28cqw,48px)] '
         + 'font-normal uppercase '
         + 'tracking-[0.035em] leading-[1.05] '
         + 'text-[#f4c542]',
@@ -67,8 +66,6 @@ const MENU_TYPE_CLASSES = {
 };
 
 const DEFAULT_DISPLAY_NOTICES = {
-    platesAndSandwichesBrisketUpchargeCents: 200,
-    specialtyBrisketUpchargeCents: 100,
     glutenDisclaimer:
         'Products are prepared in a shared kitchen. Cross-contact with gluten and other allergens is possible. Please tell our team about any allergies.',
     glutenDisclaimerEs:
@@ -93,16 +90,21 @@ const SECTION_COLUMNS = [
 const SECTION_SIZE_CLASSES = {
     bbq_plates: 'shrink-0',
     bbq_sandwiches: 'shrink-0',
-    family_packs: 'flex-[1.2]',
-    kids_meals: 'flex-[0.8]',
-    meat_by_pound: 'flex-[1.1]',
-    more_great_eating: 'flex-[0.9]'
+    family_packs: 'shrink-0',
+    kids_meals: 'flex-1',
+    meat_by_pound: 'flex-1',
+    more_great_eating: 'shrink-0'
 };
 
 const DENSE_SECTIONS = new Set([
     'family_packs',
     'meat_by_pound',
     'kids_meals'
+]);
+
+const STACKED_TITLE_SECTIONS = new Set([
+    'family_packs',
+    'more_great_eating'
 ]);
 
 const sortByOrder = (records) =>
@@ -307,14 +309,17 @@ function MenuItem({
                                     : 'whitespace-nowrap'
                             }
                         >
-                            {!shouldStackName && (
-                                <span
-                                    aria-hidden="true"
-                                    className="mr-[0.25cqw] text-white/50"
-                                >
-                                    |
-                                </span>
-                            )}
+                            {!shouldStackName
+                                && item.id
+                                !== 'kids_mac_and_cheese'
+                                && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="mr-[0.25cqw] text-white/50"
+                                    >
+                                        |
+                                    </span>
+                                )}
 
                             <span lang="es">
                                 {item.nameEs}
@@ -352,7 +357,7 @@ function MenuItem({
                 <ul
                     className={
                         sectionId === 'family_packs'
-                            ? 'grid grid-cols-2 gap-x-[0.75cqw] gap-y-[0.12cqw]'
+                            ? 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-[0.75cqw] gap-y-[0.12cqw]'
                             : 'space-y-[0.1cqw]'
                     }
                 >
@@ -420,6 +425,11 @@ function SectionHeading({
     const titleEs =
         String(section.titleEs || '').trim();
 
+    const shouldStackTitle =
+        STACKED_TITLE_SECTIONS.has(
+            section.id
+        );
+
     const notes = [
         section.subtitle,
         section.subtitleEs
@@ -433,18 +443,27 @@ function SectionHeading({
         <header className="mb-[0.62cqw] text-center">
             <h2
                 style={DISPLAY_FONT_STYLE}
-                className={MENU_TYPE_CLASSES.sectionTitle}
+                className={
+                    MENU_TYPE_CLASSES.sectionTitle
+                    + (
+                        shouldStackTitle
+                            ? ' flex flex-col items-center gap-y-[0.12cqw]'
+                            : ' whitespace-nowrap'
+                    )
+                }
             >
                 <span>{title}</span>
 
                 {titleEs && (
                     <>
-                        <span
-                            aria-hidden="true"
-                            className="mx-[0.38cqw] text-white/40"
-                        >
-                            |
-                        </span>
+                        {!shouldStackTitle && (
+                            <span
+                                aria-hidden="true"
+                                className="mx-[0.38cqw] text-white/40"
+                            >
+                                |
+                            </span>
+                        )}
 
                         <span lang="es">
                             {titleEs}
@@ -674,7 +693,10 @@ function MenuSection({
 
     const itemSpacingClass =
         section.id === 'meat_by_pound'
-            ? 'space-y-[0.14cqw]'
+            ? (
+                'flex-1 min-h-0 flex flex-col '
+                + 'justify-evenly gap-[0.12cqw]'
+            )
             : dense
                 ? 'space-y-[0.38cqw]'
                 : 'space-y-[0.56cqw]';
@@ -685,8 +707,7 @@ function MenuSection({
 
     return (
         <section
-            className={`${sizeClass} min-h-0 overflow-hidden px-[0.12cqw] py-[0.15cqw]`}
-        >
+            className={`${sizeClass} min-w-0 min-h-0 overflow-hidden flex flex-col px-[0.12cqw] py-[0.15cqw]`}        >
             <SectionHeading section={section} />
 
             <MenuModifierList
@@ -780,6 +801,14 @@ function PreviewSpotlight({
         : null;
 
     const displayedSpotlight = spotlight || {
+        layoutMode: 'text',
+        imageUrl: '',
+        imageAlt: '',
+        imageFraming: {
+            zoom: 1,
+            x: 50,
+            y: 50
+        },
         label: 'Featured',
         labelEs: 'Destacado',
         title: superSpud.name,
@@ -792,69 +821,265 @@ function PreviewSpotlight({
             fallbackPrice?.priceCents
     };
 
+    const imageUrl = String(
+        displayedSpotlight.imageUrl || ''
+    ).trim();
+
+    const requestedLayout =
+        displayedSpotlight.layoutMode;
+
+    const layoutMode =
+        imageUrl
+            && (
+                requestedLayout === 'image'
+                || requestedLayout === 'image_text'
+            )
+            ? requestedLayout
+            : 'text';
+
+    const usesImage =
+        layoutMode !== 'text';
+
+    const showsText =
+        layoutMode !== 'image';
+
+    const usesTextOverlay =
+        layoutMode === 'image_text';
+
+    const framing =
+        displayedSpotlight.imageFraming || {};
+
+    const normalizeFramingValue = (
+        value,
+        fallback,
+        minimum,
+        maximum
+    ) => {
+        const numericValue = Number(value);
+
+        if (!Number.isFinite(numericValue)) {
+            return fallback;
+        }
+
+        return Math.min(
+            maximum,
+            Math.max(minimum, numericValue)
+        );
+    };
+
+    const safeFraming = {
+        zoom: normalizeFramingValue(
+            framing.zoom,
+            1,
+            1,
+            3
+        ),
+        x: normalizeFramingValue(
+            framing.x,
+            50,
+            0,
+            100
+        ),
+        y: normalizeFramingValue(
+            framing.y,
+            50,
+            0,
+            100
+        )
+    };
+
     return (
-        <section className="flex-1 min-h-0 overflow-hidden rounded-[0.5cqw] bg-[#f4c542] px-[0.9cqw] py-[0.7cqw] text-[#0d0d0c]">
-            <header className="text-center">
-                <p
-                    style={DISPLAY_FONT_STYLE}
-                    className="text-[clamp(10px,0.76cqw,28px)] uppercase tracking-[0.025em] leading-none"
+        <section
+            aria-label={
+                layoutMode === 'image'
+                    ? displayedSpotlight.title
+                    : undefined
+            }
+            className={
+                'flex-1 min-h-0 overflow-hidden '
+                + 'rounded-[0.5cqw] '
+                + (
+                    usesImage
+                        ? 'relative bg-black text-white'
+                        : 'bg-[#f4c542] px-[0.9cqw] py-[0.7cqw] text-[#0d0d0c]'
+                )
+            }
+        >
+            {usesImage && (
+                <img
+                    src={imageUrl}
+                    alt={
+                        displayedSpotlight.imageAlt
+                        || displayedSpotlight.title
+                        || ''
+                    }
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                        objectPosition:
+                            `${safeFraming.x}% ${safeFraming.y}%`,
+                        transform:
+                            `scale(${safeFraming.zoom})`,
+                        transformOrigin:
+                            `${safeFraming.x}% ${safeFraming.y}%`
+                    }}
+                />
+            )}
+
+            {usesTextOverlay && (
+                <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-black/70 to-transparent" />
+            )}
+
+            {showsText && (
+                <div
+                    className={
+                        usesTextOverlay
+                            ? 'relative z-10 flex h-full flex-col'
+                            : ''
+                    }
                 >
-                    {displayedSpotlight.label}
-                </p>
-
-                {displayedSpotlight.labelEs && (
-                    <p
-                        lang="es"
-                        className="mt-[0.13cqw] text-[clamp(9px,0.62cqw,23px)] font-extrabold uppercase tracking-[0.04em] leading-none text-black/75"
+                    <header
+                        className={
+                            usesTextOverlay
+                                ? 'px-[0.9cqw] pt-[0.75cqw] text-center'
+                                : 'text-center'
+                        }
                     >
-                        {displayedSpotlight.labelEs}
-                    </p>
-                )}
-            </header>
-
-            <div className="mt-[0.55cqw] flex items-start justify-between gap-[0.65cqw]">
-                <div className="min-w-0">
-                    <h3 className="text-[clamp(13px,1.08cqw,40px)] font-extrabold uppercase tracking-[-0.01em] leading-none">
-                        {displayedSpotlight.title}
-                    </h3>
-
-                    {displayedSpotlight.titleEs && (
                         <p
-                            lang="es"
-                            className="mt-[0.14cqw] text-[clamp(11px,0.82cqw,30px)] font-extrabold uppercase leading-none"
+                            style={DISPLAY_FONT_STYLE}
+                            className={
+                                'uppercase leading-none '
+                                + (
+                                    usesTextOverlay
+                                        ? 'text-[clamp(18px,1.28cqw,48px)] tracking-[0.035em] text-[#f4c542] drop-shadow-[0_2px_2px_rgba(0,0,0,0.95)]'
+                                        : 'text-[clamp(10px,0.76cqw,28px)] tracking-[0.025em]'
+                                )
+                            }
                         >
-                            {displayedSpotlight.titleEs}
+                            {displayedSpotlight.label}
                         </p>
-                    )}
 
-                    {displayedSpotlight.description && (
-                        <p className="mt-[0.28cqw] text-[clamp(10px,0.7cqw,26px)] font-semibold leading-[1.12]">
-                            {displayedSpotlight.description}
-                        </p>
-                    )}
+                        {displayedSpotlight.labelEs && (
+                            <p
+                                lang="es"
+                                className={
+                                    'mt-[0.18cqw] font-extrabold '
+                                    + 'uppercase leading-none '
+                                    + (
+                                        usesTextOverlay
+                                            ? 'text-[clamp(10px,0.7cqw,26px)] tracking-[0.045em] text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.95)]'
+                                            : 'text-[clamp(9px,0.62cqw,23px)] tracking-[0.04em] text-black/75'
+                                    )
+                                }
+                            >
+                                {displayedSpotlight.labelEs}
+                            </p>
+                        )}
+                    </header>
 
-                    {displayedSpotlight.descriptionEs && (
-                        <p
-                            lang="es"
-                            className="mt-[0.22cqw] text-[clamp(9px,0.62cqw,23px)] font-semibold leading-[1.12] text-black/80"
-                        >
-                            {displayedSpotlight.descriptionEs}
-                        </p>
-                    )}
-                </div>
+                    <div
+                        className={
+                            'flex items-start justify-between '
+                            + 'gap-[0.75cqw] '
+                            + (
+                                usesTextOverlay
+                                    ? 'mt-auto bg-white/[0.70] px-[0.9cqw] py-[0.65cqw] text-[#0d0d0c] backdrop-blur-[1px]'
+                                    : 'mt-[0.55cqw]'
+                            )
+                        }
+                    >
+                        <div className="min-w-0">
+                            <h3
+                                className={
+                                    'font-extrabold uppercase '
+                                    + 'tracking-[-0.01em] leading-none '
+                                    + (
+                                        usesTextOverlay
+                                            ? 'text-[clamp(14px,1.14cqw,42px)]'
+                                            : 'text-[clamp(13px,1.08cqw,40px)]'
+                                    )
+                                }
+                            >
+                                {displayedSpotlight.title}
+                            </h3>
 
-                {Number.isFinite(
-                    Number(
-                        displayedSpotlight.priceCents
-                    )
-                ) && (
-                        <span className="shrink-0 text-[clamp(15px,1.2cqw,45px)] font-extrabold tabular-nums leading-none">
-                            {formatPrice(
-                                displayedSpotlight.priceCents
+                            {displayedSpotlight.titleEs && (
+                                <p
+                                    lang="es"
+                                    className="mt-[0.14cqw] text-[clamp(11px,0.82cqw,30px)] font-extrabold uppercase leading-none"
+                                >
+                                    {displayedSpotlight.titleEs}
+                                </p>
                             )}
-                        </span>
-                    )}
-            </div>
+
+                            {displayedSpotlight.description && (
+                                <p
+                                    className={
+                                        'mt-[0.3cqw] '
+                                        + 'text-[clamp(10px,0.7cqw,26px)] '
+                                        + 'font-semibold leading-[1.12] '
+                                        + (
+                                            usesTextOverlay
+                                                ? 'line-clamp-2'
+                                                : ''
+                                        )
+                                    }
+                                >
+                                    {
+                                        displayedSpotlight
+                                            .description
+                                    }
+                                </p>
+                            )}
+
+                            {displayedSpotlight.descriptionEs && (
+                                <p
+                                    lang="es"
+                                    className={
+                                        'mt-[0.2cqw] '
+                                        + 'text-[clamp(9px,0.62cqw,23px)] '
+                                        + 'font-semibold leading-[1.12] '
+                                        + (
+                                            usesTextOverlay
+                                                ? 'text-black/75 line-clamp-2'
+                                                : 'text-black/80'
+                                        )
+                                    }
+                                >
+                                    {
+                                        displayedSpotlight
+                                            .descriptionEs
+                                    }
+                                </p>
+                            )}
+                        </div>
+
+                        {Number.isFinite(
+                            Number(
+                                displayedSpotlight
+                                    .priceCents
+                            )
+                        ) && (
+                                <span
+                                    className={
+                                        'shrink-0 '
+                                        + 'text-[clamp(16px,1.25cqw,46px)] '
+                                        + 'font-extrabold tabular-nums leading-none '
+                                        + (
+                                            usesTextOverlay
+                                                ? 'text-[#0d0d0c]'
+                                                : ''
+                                        )
+                                    }
+                                >
+                                    {formatPrice(
+                                        displayedSpotlight
+                                            .priceCents
+                                    )}
+                                </span>
+                            )}
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
@@ -866,49 +1091,29 @@ function MenuNotices({ menu }) {
     };
 
     return (
-        <>
-            <div className="shrink-0 grid grid-cols-2 gap-[1.5cqw] border-y border-[#f4c542]/30 py-[0.22cqw] text-[clamp(9px,0.58cqw,22px)] font-extrabold uppercase tracking-[0.025em] leading-[1.1] text-[#f4c542]">
-                <p>
-                    Brisket: Plates &amp; Sandwiches +
-                    {formatPrice(
-                        notices
-                            .platesAndSandwichesBrisketUpchargeCents
-                    )}
-                    {' · '}Pok-E-To, Spuds &amp; Salads +
-                    {formatPrice(
-                        notices
-                            .specialtyBrisketUpchargeCents
-                    )}
-                </p>
+        <footer
+            className={
+                MENU_TYPE_CLASSES.disclosure
+                + ' shrink-0 flex items-center '
+                + 'justify-center gap-[0.45cqw] '
+                + 'pt-[0.32cqw] text-center'
+            }
+        >
+            <p>
+                {notices.glutenDisclaimer}
+            </p>
 
-                <p lang="es" className="text-right">
-                    Brisket: Platos y Sándwiches +
-                    {formatPrice(
-                        notices
-                            .platesAndSandwichesBrisketUpchargeCents
-                    )}
-                    {' · '}Pok-E-To, Papas y Ensaladas +
-                    {formatPrice(
-                        notices
-                            .specialtyBrisketUpchargeCents
-                    )}
-                </p>
-            </div>
-
-            <footer
-                className={
-                    MENU_TYPE_CLASSES.disclosure
-                    + ' shrink-0 grid grid-cols-2 '
-                    + 'gap-[1.5cqw] pt-[0.28cqw]'
-                }
+            <span
+                aria-hidden="true"
+                className="shrink-0 text-white/45"
             >
-                <p>{notices.glutenDisclaimer}</p>
+                |
+            </span>
 
-                <p lang="es" className="text-right">
-                    {notices.glutenDisclaimerEs}
-                </p>
-            </footer>
-        </>
+            <p lang="es">
+                {notices.glutenDisclaimerEs}
+            </p>
+        </footer>
     );
 }
 
@@ -932,40 +1137,39 @@ export default function MeatMenuPreview({
             style={BODY_FONT_STYLE}
             className="relative w-full h-full overflow-hidden bg-[#0d0d0c] text-white [container-type:inline-size]"
         >
-            <div className="absolute inset-[1.35%] flex flex-col">
+            <div className="absolute inset-y-[1.5%] inset-x-[2.25%] flex flex-col">
                 {visibleSectionCount > 0 ? (
-                    <main className="flex-1 min-h-0 grid grid-cols-[1fr_1.06fr_1.04fr] gap-[1.7cqw] pt-[0.15cqw]">
-                        {columns.map(
-                            (column, columnIndex) => (
-                                <div
-                                    key={
-                                        `menu-column-`
-                                        + columnIndex
-                                    }
-                                    className="min-h-0 flex flex-col gap-[0.75cqw]"
-                                >
-                                    {column.map(
-                                        (section) => (
-                                            <MenuSection
-                                                key={
-                                                    section.id
-                                                }
-                                                section={
-                                                    section
-                                                }
-                                            />
-                                        )
-                                    )}
-
-                                    {columnIndex === 0 && (
-                                        <PreviewSpotlight
-                                            menu={menu}
-                                            spotlight={spotlight}
+                    <main className="flex-1 min-h-0 grid grid-cols-3 gap-[1.35cqw] pt-[0.15cqw]">                        {columns.map(
+                        (column, columnIndex) => (
+                            <div
+                                key={
+                                    `menu-column-`
+                                    + columnIndex
+                                }
+                                className="min-w-0 min-h-0 flex flex-col gap-[0.75cqw]"
+                            >
+                                {column.map(
+                                    (section) => (
+                                        <MenuSection
+                                            key={
+                                                section.id
+                                            }
+                                            section={
+                                                section
+                                            }
                                         />
-                                    )}
-                                </div>
-                            )
-                        )}
+                                    )
+                                )}
+
+                                {columnIndex === 0 && (
+                                    <PreviewSpotlight
+                                        menu={menu}
+                                        spotlight={spotlight}
+                                    />
+                                )}
+                            </div>
+                        )
+                    )}
                     </main>
                 ) : (
                     <main className="flex-1 flex items-center justify-center">
