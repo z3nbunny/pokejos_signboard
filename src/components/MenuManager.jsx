@@ -1898,9 +1898,9 @@ export default function MenuManager() {
 
             /*
              * Linked placements share their customer-facing
-             * English and Spanish names and bulk-price
-             * eligibility. Visibility and descriptions remain
-             * placement-specific.
+             * English and Spanish names, descriptions,
+             * prices and bulk-price eligibility. Visibility
+             * remains placement-specific.
              */
             const synchronizeLinkedItems =
                 Boolean(
@@ -1909,6 +1909,7 @@ export default function MenuManager() {
                 && [
                     'name',
                     'nameEs',
+                    'description',
                     'bulkPriceEligible'
                 ].includes(field);
 
