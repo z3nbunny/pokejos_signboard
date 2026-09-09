@@ -15,6 +15,8 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/useAuth';
 import MeatMenuPreview from './MeatMenuPreview';
 import MenuSpotlightManager from './MenuSpotlightManager';
+import MenuWorkspacePanel from './MenuWorkspacePanel';
+import MenuPreviewThumbnail from './MenuPreviewThumbnail';
 import { MEAT_MENU_SEED } from '../data/meatMenuSeed';
 
 const DEFAULT_MEAT_AVAILABLE_ON = [
@@ -1404,7 +1406,9 @@ function MenuSectionEditor({
     );
 }
 
-export default function MenuManager() {
+export default function MenuManager({
+    onUnsavedChangesChange = null
+}) {
     const { currentUser, userData } = useAuth();
 
     const [draftMenu, setDraftMenu] = useState(null);
@@ -1489,6 +1493,15 @@ export default function MenuManager() {
     ] = useState([]);
     const [hasUnsavedChanges, setHasUnsavedChanges] =
         useState(false);
+
+    useEffect(() => {
+        onUnsavedChangesChange?.(
+            hasUnsavedChanges
+        );
+    }, [
+        hasUnsavedChanges,
+        onUnsavedChangesChange
+    ]);
 
     const [message, setMessage] = useState('');
 
@@ -3461,120 +3474,6 @@ export default function MenuManager() {
                 </div>
             </div>
 
-            <section className="bg-accent-light border border-accent/30 rounded-3xl p-5">
-                <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
-                    <div>
-                        <h3 className="text-lg font-bold">
-                            TV Draft Preview
-                        </h3>
-
-                        <p className="text-sm text-text-secondary mt-1">
-                            Send the last saved draft to one paired
-                            TV without publishing a new menu version.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                        <div>
-                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                Location
-                            </label>
-
-                            <select
-                                value={previewLocationId}
-                                onChange={(event) => {
-                                    setPreviewLocationId(
-                                        event.target.value
-                                    );
-
-                                    setPreviewDeviceId('');
-                                }}
-                                disabled={sendingTvPreview}
-                                className="bg-surface border border-border rounded-xl px-4 py-2.5"
-                            >
-                                {MENU_PREVIEW_LOCATIONS.map(
-                                    (location) => (
-                                        <option
-                                            key={location.id}
-                                            value={location.id}
-                                        >
-                                            {location.label}
-                                        </option>
-                                    )
-                                )}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                Paired TV
-                            </label>
-
-                            <select
-                                value={previewDeviceId}
-                                onChange={(event) =>
-                                    setPreviewDeviceId(
-                                        event.target.value
-                                    )
-                                }
-                                disabled={
-                                    sendingTvPreview
-                                    || previewDeviceIds.length === 0
-                                }
-                                className="bg-surface border border-border rounded-xl px-4 py-2.5"
-                            >
-                                {previewDeviceIds.length === 0 ? (
-                                    <option value="">
-                                        No paired TVs found
-                                    </option>
-                                ) : (
-                                    previewDeviceIds.map(
-                                        (deviceId) => (
-                                            <option
-                                                key={deviceId}
-                                                value={deviceId}
-                                            >
-                                                {deviceId.replace(
-                                                    /_/g,
-                                                    ' '
-                                                )}
-                                            </option>
-                                        )
-                                    )
-                                )}
-                            </select>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleSendToTvPreview}
-                            disabled={
-                                hasUnsavedChanges
-                                || saving
-                                || publishing
-                                || sendingTvPreview
-                                || !previewDeviceId
-                            }
-                            title={
-                                hasUnsavedChanges
-                                    ? 'Save or discard changes before sending the TV preview.'
-                                    : 'Send the saved draft to this paired TV.'
-                            }
-                            className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-full text-xs font-black uppercase tracking-wider transition-colors"
-                        >
-                            {sendingTvPreview
-                                ? 'Sending...'
-                                : 'Send to TV Preview'}
-                        </button>
-                    </div>
-                </div>
-
-                <p className="text-xs text-text-secondary mt-3">
-                    The TV must use matching location and device
-                    values with screen=meat&amp;preview=1.
-                </p>
-            </section>
-
             <section className="bg-bg border border-border rounded-3xl p-5">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
@@ -3674,42 +3573,189 @@ export default function MenuManager() {
                 )}
             </section>
 
-            <section className="bg-bg border border-border rounded-3xl p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h3 className="text-lg font-bold">
-                            Live Meat Menu Preview
-                        </h3>
+            <MenuWorkspacePanel
+                panelKey="meat-preview-and-tv"
+                title="Preview & TV Testing"
+                description="Inspect the working draft, open it full-screen, or send the last saved draft to a paired TV."
+                summary={
+                    <div className="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between gap-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <MenuPreviewThumbnail label="Working Meat Menu preview">
+                                <MeatMenuPreview
+                                    menu={draftMenu}
+                                    spotlight={previewSpotlight}
+                                />
+                            </MenuPreviewThumbnail>
 
-                        <p className="text-sm text-text-secondary mt-1">
-                            This preview reflects the current working
-                            draft, including unsaved changes.
-                        </p>
+                            <div className="min-w-0">
+                                <p className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
+                                    Working Draft
+                                </p>
+
+                                <p className="mt-1 text-sm font-bold text-text-primary">
+                                    {hasUnsavedChanges
+                                        ? 'Save the draft before sending it to a TV'
+                                        : 'Saved draft is ready to send'}
+                                </p>
+
+                                <p className="mt-1 text-xs text-text-secondary">
+                                    Published version{' '}
+                                    {draftMenu.sourceVersion || 0}
+                                    {' · '}
+                                    {sections.length} sections
+                                    {' · '}
+                                    {itemCount} items
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 2xl:items-end">
+                            <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                                <div>
+                                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                        Location
+                                    </label>
+
+                                    <select
+                                        value={previewLocationId}
+                                        onChange={(event) => {
+                                            setPreviewLocationId(
+                                                event.target.value
+                                            );
+
+                                            setPreviewDeviceId('');
+                                        }}
+                                        disabled={sendingTvPreview}
+                                        className="w-full sm:w-auto bg-surface border border-border rounded-xl px-4 py-2.5"
+                                    >
+                                        {MENU_PREVIEW_LOCATIONS.map(
+                                            (location) => (
+                                                <option
+                                                    key={location.id}
+                                                    value={location.id}
+                                                >
+                                                    {location.label}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                                        Paired TV
+                                    </label>
+
+                                    <select
+                                        value={previewDeviceId}
+                                        onChange={(event) =>
+                                            setPreviewDeviceId(
+                                                event.target.value
+                                            )
+                                        }
+                                        disabled={
+                                            sendingTvPreview
+                                            || previewDeviceIds.length === 0
+                                        }
+                                        className="w-full sm:w-auto bg-surface border border-border rounded-xl px-4 py-2.5"
+                                    >
+                                        {previewDeviceIds.length === 0 ? (
+                                            <option value="">
+                                                No paired TVs found
+                                            </option>
+                                        ) : (
+                                            previewDeviceIds.map(
+                                                (deviceId) => (
+                                                    <option
+                                                        key={deviceId}
+                                                        value={deviceId}
+                                                    >
+                                                        {deviceId.replace(
+                                                            /_/g,
+                                                            ' '
+                                                        )}
+                                                    </option>
+                                                )
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleSendToTvPreview}
+                                    disabled={
+                                        hasUnsavedChanges
+                                        || saving
+                                        || publishing
+                                        || sendingTvPreview
+                                        || !previewDeviceId
+                                    }
+                                    title={
+                                        hasUnsavedChanges
+                                            ? 'Save or discard changes before sending the TV preview.'
+                                            : 'Send the saved draft to this paired TV.'
+                                    }
+                                    className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-full text-xs font-black uppercase tracking-wider transition-colors"
+                                >
+                                    {sendingTvPreview
+                                        ? 'Sending...'
+                                        : 'Send Saved Draft'}
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-text-secondary 2xl:text-right">
+                                Sends the last saved draft without publishing
+                                a new menu version.
+                            </p>
+                        </div>
+                    </div>
+                }
+            >
+                <div className="space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h4 className="font-bold text-text-primary">
+                                Working Draft Preview
+                            </h4>
+
+                            <p className="mt-1 text-sm text-text-secondary">
+                                This preview includes unsaved changes.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setIsPreviewOpen(true)
+                            }
+                            className="px-5 py-2.5 bg-surface hover:bg-border border border-border rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Open Full-Screen Preview
+                        </button>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() =>
-                            setIsPreviewOpen(true)
-                        }
-                        className="px-5 py-2.5 bg-surface hover:bg-border border border-border rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
-                    >
-                        Open Full-Screen Preview
-                    </button>
-                </div>
+                    <div className="w-full aspect-video overflow-hidden rounded-2xl border border-border bg-black shadow-xl">
+                        <MeatMenuPreview
+                            menu={draftMenu}
+                            spotlight={previewSpotlight}
+                        />
+                    </div>
 
-                <div className="w-full aspect-video overflow-hidden rounded-2xl border border-border bg-black shadow-xl">
-                    <MeatMenuPreview
-                        menu={draftMenu}
-                        spotlight={previewSpotlight}
-                    />
-                </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-text-secondary">
+                        <p>
+                            Opening or closing this preview does not save or
+                            publish the menu.
+                        </p>
 
-                <p className="text-xs text-text-secondary">
-                    Preview only—opening or closing this display does
-                    not save or publish the menu.
-                </p>
-            </section>
+                        <p>
+                            TV URL requires matching location and device
+                            values with screen=meat&amp;preview=1.
+                        </p>
+                    </div>
+                </div>
+            </MenuWorkspacePanel>
+
 
             <MenuSpotlightManager
                 menu={draftMenu}

@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { doc, onSnapshot, getDoc, setDoc, collection, addDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/useAuth';
 import FleetDashboard from './FleetDashboard';
-import MenuManager from './MenuManager';
+import RestaurantMenuWorkspace from './RestaurantMenuWorkspace';
 import DevicePairingManager from './DevicePairingManager';
 
 const omitDocumentId = (record) => {
@@ -1404,7 +1404,7 @@ export default function Admin() {
 
                         {/* TAB: RESTAURANT MENUS */}
                         {activeTab === 'menus' && (
-                            <MenuManager />
+                            <RestaurantMenuWorkspace />
                         )}
 
                         {/* TAB: TV PAIRING */}

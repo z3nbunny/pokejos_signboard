@@ -5,6 +5,7 @@ import MerchCarousel from './components/MerchCarousel';
 import BottomCards from './components/BottomCards';
 import EventMode from './components/EventMode';
 import MeatMenuDisplay from './components/MeatMenuDisplay';
+import SidesMenuDisplay from './components/SidesMenuDisplay';
 import { db } from './firebase';
 import { doc, collection, onSnapshot } from 'firebase/firestore';
 import { useAuth } from './contexts/useAuth';
@@ -42,6 +43,12 @@ export default function App() {
 
   const isMeatMenuScreen =
     requestedScreen === 'meat';
+
+  const isSidesMenuScreen =
+    requestedScreen === 'sides';
+
+  const isRestaurantMenuScreen =
+    isMeatMenuScreen || isSidesMenuScreen;
 
   const isMenuPreview =
     queryParams.get('preview') === '1';
@@ -94,7 +101,7 @@ export default function App() {
   useEffect(() => {
     if (
       currentView === 'TV'
-      && !isMeatMenuScreen
+      && !isRestaurantMenuScreen
     ) {
       const unsubSettings = onSnapshot(doc(db, 'locations', activeLocation, 'settings', 'display'), (docSnap) => {
         if (docSnap.exists()) {
@@ -124,7 +131,7 @@ export default function App() {
   }, [
     currentView,
     activeLocation,
-    isMeatMenuScreen
+    isRestaurantMenuScreen
   ]);
 
   // --- 2b. FULLY KIOSK REMOTE COMMAND LISTENER (DEVICE LEVEL) ---
@@ -134,7 +141,7 @@ export default function App() {
   useEffect(() => {
     if (
       currentView !== 'TV'
-      || isMeatMenuScreen
+      || isRestaurantMenuScreen
     ) {
       return;
     }
@@ -190,7 +197,7 @@ export default function App() {
     manualLayout,
     currentView,
     defaultCampaignIds,
-    isMeatMenuScreen
+    isRestaurantMenuScreen
   ]);
 
   // --- 4. AUTOMATED SLEEP / WAKE SCHEDULER ---
@@ -303,9 +310,15 @@ export default function App() {
         />
       )}
 
-      {/* Explicit Meat Menu mode leaves existing displays unchanged. */}
+      {/* Explicit menu modes leave existing lobby displays unchanged. */}
       {isMeatMenuScreen ? (
         <MeatMenuDisplay
+          activeLocation={activeLocation}
+          deviceId={deviceId}
+          previewMode={isMenuPreview}
+        />
+      ) : isSidesMenuScreen ? (
+        <SidesMenuDisplay
           activeLocation={activeLocation}
           deviceId={deviceId}
           previewMode={isMenuPreview}
