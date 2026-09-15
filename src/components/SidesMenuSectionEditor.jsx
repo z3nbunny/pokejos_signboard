@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import MenuEditorCard from './MenuEditorCard';
+import MenuEditorItemList from './MenuEditorItemList';
 
 const DIETARY_OPTIONS = [
     {
@@ -720,6 +722,11 @@ export default function SidesMenuSectionEditor({
     const items = section.items || [];
     const modifiers = section.modifiers || [];
 
+    const [
+        recentlyAddedItemId,
+        setRecentlyAddedItemId
+    ] = useState('');
+
     const changeSectionField = (field, value) => {
         onChange({
             ...section,
@@ -830,6 +837,8 @@ export default function SidesMenuSectionEditor({
             ...section,
             items: [...items, nextItem]
         });
+
+        setRecentlyAddedItemId(nextItem.id);
     };
 
     const changeModifier = (
@@ -1009,45 +1018,47 @@ export default function SidesMenuSectionEditor({
                 Show this section on the menu
             </label>
 
-            <div className="space-y-4 border-t border-border pt-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h4 className="font-bold text-text-primary">
-                            Items
-                        </h4>
-                        <p className="mt-1 text-sm text-text-secondary">
-                            Edit copy, pricing, badges, visibility and order.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={addItem}
-                        disabled={disabled}
-                        className="rounded-full bg-accent px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-accent-hover disabled:opacity-40"
-                    >
-                        Add Item
-                    </button>
-                </div>
-
+            <MenuEditorItemList
+                itemCount={items.length}
+                onAddItem={addItem}
+                disabled={disabled}
+                className="border-t border-border pt-5"
+            >
                 {items.map((item, index) => (
-                    <ItemEditor
+                    <MenuEditorCard
                         key={item.id}
-                        item={item}
-                        index={index}
-                        itemCount={items.length}
-                        pricingGroups={pricingGroups}
-                        disabled={disabled}
-                        onChange={(nextItem) =>
-                            changeItem(item.id, nextItem)
+                        revealKey={
+                            recentlyAddedItemId === item.id
+                                ? item.id
+                                : ''
                         }
-                        onMove={(direction) =>
-                            moveItem(index, direction)
-                        }
-                        onRemove={() => removeItem(item)}
-                    />
+                        className="rounded-2xl"
+                    >
+                        <ItemEditor
+                            item={item}
+                            index={index}
+                            itemCount={items.length}
+                            pricingGroups={pricingGroups}
+                            disabled={disabled}
+                            onChange={(nextItem) =>
+                                changeItem(
+                                    item.id,
+                                    nextItem
+                                )
+                            }
+                            onMove={(direction) =>
+                                moveItem(
+                                    index,
+                                    direction
+                                )
+                            }
+                            onRemove={() =>
+                                removeItem(item)
+                            }
+                        />
+                    </MenuEditorCard>
                 ))}
-            </div>
+            </MenuEditorItemList>
 
             <div className="space-y-4 border-t border-border pt-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

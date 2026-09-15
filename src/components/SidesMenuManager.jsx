@@ -18,6 +18,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/useAuth';
 import MenuPreviewThumbnail from './MenuPreviewThumbnail';
 import MenuWorkspacePanel from './MenuWorkspacePanel';
+import MenuEditorCard from './MenuEditorCard';
 import SidesMenuPreview from './SidesMenuPreview';
 import SidesMenuSectionEditor from './SidesMenuSectionEditor';
 import { SIDES_MENU_SEED } from '../data/sidesMenuSeed';
@@ -1860,8 +1861,12 @@ export default function SidesMenuManager({
                 </div>
 
                 {sections.map((section) => (
-                    <MenuWorkspacePanel
+                    <MenuEditorCard
                         key={section.id}
+                        showAccent
+                        className="rounded-3xl"
+                    >
+                        <MenuWorkspacePanel
                         panelKey={`sides-section-${section.id}`}
                         title={
                             section.titleEs
@@ -1903,7 +1908,8 @@ export default function SidesMenuManager({
                             }
                         />
                     </MenuWorkspacePanel>
-                ))}
+                </MenuEditorCard>
+            ))}
             </div>
 
             <div className="sticky bottom-4 flex flex-col gap-4 rounded-2xl border border-border bg-surface/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
@@ -1936,5 +1942,5 @@ export default function SidesMenuManager({
                 </button>
             </div>
         </div>
-    );
+            );
 }

@@ -16,6 +16,8 @@ import { useAuth } from '../contexts/useAuth';
 import MeatMenuPreview from './MeatMenuPreview';
 import MenuSpotlightManager from './MenuSpotlightManager';
 import MenuWorkspacePanel from './MenuWorkspacePanel';
+import MenuEditorCard from './MenuEditorCard';
+import MenuEditorItemList from './MenuEditorItemList';
 import MenuPreviewThumbnail from './MenuPreviewThumbnail';
 import { MEAT_MENU_SEED } from '../data/meatMenuSeed';
 
@@ -279,7 +281,6 @@ const buildPriceAdjustmentPreview = (
 function MenuItemEditor({
     sectionId,
     item,
-    isHighlighted,
     itemIndex,
     itemCount,
     onItemChange,
@@ -355,12 +356,9 @@ function MenuItemEditor({
 
     return (
         <article
-            id={`menu-item-${item.id}`}
-            className={`border-2 rounded-2xl p-4 space-y-4 transition-all duration-300 ${isHighlighted
-                ? 'bg-surface border-blue-500 ring-4 ring-blue-500/20 shadow-lg'
-                : item.enabled
-                    ? 'bg-surface border-border shadow-sm'
-                    : 'bg-bg border-border opacity-70'
+            className={`space-y-4 rounded-2xl border-2 p-4 transition-all duration-300 ${item.enabled
+                ? 'border-border bg-surface shadow-sm'
+                : 'border-border bg-bg opacity-70'
                 }`}
         >
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -372,11 +370,6 @@ function MenuItemEditor({
                     <code className="text-xs">
                         {item.id}
                     </code>
-                    {isHighlighted && (
-                        <span className="inline-block ml-3 px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                            New Item
-                        </span>
-                    )}
 
                     {item.sharedProductKey && (
                         <span
@@ -1134,11 +1127,8 @@ function MenuSectionEditor({
 
     return (
         <section className="border-2 border-border rounded-3xl overflow-hidden bg-surface shadow-sm">
-            <div className="relative flex items-center gap-4 p-5 pl-10 bg-surface">
-                <span
-                    aria-hidden="true"
-                    className="absolute left-3 top-4 bottom-4 w-1.5 rounded-full bg-accent pointer-events-none"
-                />                <button
+            <div className="flex items-center gap-4 bg-surface p-5">
+                <button
                     type="button"
                     onClick={onToggle}
                     className="flex-1 text-left"
@@ -1340,66 +1330,59 @@ function MenuSectionEditor({
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider">
-                                Menu Items
-                            </h4>
-
-                            <p className="text-xs text-text-secondary mt-1">
-                                Customer-facing products and their prices.
-                            </p>
-                        </div>
-
-                        <span className="px-3 py-1 bg-surface border border-border rounded-full text-xs font-bold text-text-secondary">
-                            {section.items?.length || 0} Items
-                        </span>
-                    </div>
-                    <div className="space-y-4">
-                        {(section.items || []).map(
-                            (item, itemIndex) => (
-                                <MenuItemEditor
-                                    key={item.id}
-                                    sectionId={section.id}
-                                    item={item}
-                                    isHighlighted={
-                                        highlightedItemId === item.id
-                                    }
-                                    itemIndex={itemIndex}
-                                    itemCount={
-                                        section.items.length
-                                    }
-                                    onItemChange={
-                                        onItemChange
-                                    }
-                                    onPriceChange={
-                                        onPriceChange
-                                    }
-                                    onMoveItem={
-                                        onMoveItem
-                                    }
-                                    onDeleteItem={
-                                        onDeleteItem
-                                    }
-                                    onAddPrice={
-                                        onAddPrice
-                                    }
-                                    onDeletePrice={
-                                        onDeletePrice
-                                    }
-                                />
-                            )
-                        )}
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={() =>
+                    <MenuEditorItemList
+                        itemCount={
+                            (section.items || []).length
+                        }
+                        onAddItem={() =>
                             onAddItem(section.id)
                         }
-                        className="w-full py-3 bg-accent-light hover:bg-blue-100 border-2 border-dashed border-accent text-accent rounded-2xl text-sm font-bold uppercase tracking-wider transition-colors"                    >
-                        + Add Menu Item
-                    </button>
+                        title="Menu Items"
+                        description="Customer-facing products and their prices."
+                        className="border-t border-border pt-5"
+                    >
+                        {(section.items || []).map(
+                            (item, itemIndex) => (
+                                <MenuEditorCard
+                                    key={item.id}
+                                    revealKey={
+                                        highlightedItemId
+                                            === item.id
+                                            ? item.id
+                                            : ''
+                                    }
+                                    className="rounded-2xl"
+                                >
+                                    <MenuItemEditor
+                                        sectionId={section.id}
+                                        item={item}
+                                        itemIndex={itemIndex}
+                                        itemCount={
+                                            section.items.length
+                                        }
+                                        onItemChange={
+                                            onItemChange
+                                        }
+                                        onPriceChange={
+                                            onPriceChange
+                                        }
+                                        onMoveItem={
+                                            onMoveItem
+                                        }
+                                        onDeleteItem={
+                                            onDeleteItem
+                                        }
+                                        onAddPrice={
+                                            onAddPrice
+                                        }
+                                        onDeletePrice={
+                                            onDeletePrice
+                                        }
+                                    />
+                                </MenuEditorCard>
+                            )
+                        )}
+                    </MenuEditorItemList>
                 </div>
             )}
         </section>
@@ -1626,28 +1609,6 @@ export default function MenuManager({
 
         return () => unsubscribe();
     }, [userData?.role]);
-
-    useEffect(() => {
-        if (!highlightedItemId) {
-            return;
-        }
-
-        const animationFrame =
-            requestAnimationFrame(() => {
-                const itemElement =
-                    document.getElementById(
-                        `menu-item-${highlightedItemId}`
-                    );
-
-                itemElement?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-            });
-
-        return () =>
-            cancelAnimationFrame(animationFrame);
-    }, [highlightedItemId]);
 
     const applyDraftUpdate = (updater) => {
         setDraftMenu((currentDraft) =>
@@ -4027,29 +3988,34 @@ export default function MenuManager({
 
             <div className="space-y-4">
                 {sections.map((section) => (
-                    <MenuSectionEditor
+                    <MenuEditorCard
                         key={section.id}
-                        section={section}
-                        isOpen={
-                            openSections.has(section.id)
-                        }
-                        onToggle={() =>
-                            toggleSection(section.id)
-                        }
-                        onSectionChange={updateSection}
-                        onItemChange={updateItem}
-                        onPriceChange={updatePrice}
-                        onAddItem={addItem}
-                        onMoveItem={moveItem}
-                        onDeleteItem={deleteItem}
-                        onAddPrice={addPrice}
-                        onDeletePrice={deletePrice}
-                        onAddModifier={addModifier}
-                        onModifierChange={updateModifier}
-                        onMoveModifier={moveModifier}
-                        onDeleteModifier={deleteModifier}
-                        highlightedItemId={highlightedItemId}
-                    />
+                        showAccent
+                        className="rounded-3xl"
+                    >
+                        <MenuSectionEditor
+                            section={section}
+                            isOpen={
+                                openSections.has(section.id)
+                            }
+                            onToggle={() =>
+                                toggleSection(section.id)
+                            }
+                            onSectionChange={updateSection}
+                            onItemChange={updateItem}
+                            onPriceChange={updatePrice}
+                            onAddItem={addItem}
+                            onMoveItem={moveItem}
+                            onDeleteItem={deleteItem}
+                            onAddPrice={addPrice}
+                            onDeletePrice={deletePrice}
+                            onAddModifier={addModifier}
+                            onModifierChange={updateModifier}
+                            onMoveModifier={moveModifier}
+                            onDeleteModifier={deleteModifier}
+                            highlightedItemId={highlightedItemId}
+                        />
+                    </MenuEditorCard>
                 ))}
             </div>
 
