@@ -1,6 +1,8 @@
 import '@fontsource/rye/400.css';
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 
+import FountainFlavorGrid from './FountainFlavorGrid';
+
 const DISPLAY_FONT_STYLE = {
     fontFamily: 'Rye, serif'
 };
@@ -15,6 +17,19 @@ const COLUMN_SECTIONS = [
     ['cold_sides', 'bbq_sauces'],
     ['desserts', 'drinks']
 ];
+
+const SECTION_GRID_PLACEMENT = {
+    hot_sides: 'col-start-1 row-start-1',
+    cold_sides: 'col-start-2 row-start-1',
+    desserts: 'col-start-3 row-start-1',
+    bbq_sauces: 'col-start-2 row-start-2',
+    drinks: 'col-start-3 row-start-2'
+};
+
+const COMPACT_BEER_ITEM_IDS = new Set([
+    'domestic_beer',
+    'imported_beer'
+]);
 
 const DIETARY_BADGES = {
     gluten_free: {
@@ -136,10 +151,31 @@ function DietaryBadges({ flags = [] }) {
 
 function BilingualDescription({
     description,
-    descriptionEs
+    descriptionEs,
+    inline = false
 }) {
     if (!description && !descriptionEs) {
         return null;
+    }
+
+    if (inline) {
+        return (
+            <p className="mt-[0.16cqw] text-[0.68cqw] leading-[1.14] text-white/82">
+                {description}
+
+                {description && descriptionEs && (
+                    <span className="mx-[0.28cqw] text-[#f4c542]/70">
+                        |
+                    </span>
+                )}
+
+                {descriptionEs && (
+                    <span className="text-white/62">
+                        {descriptionEs}
+                    </span>
+                )}
+            </p>
+        );
     }
 
     return (
@@ -157,7 +193,10 @@ function BilingualDescription({
     );
 }
 
-function ItemDetails({ item }) {
+function ItemDetails({
+    item,
+    inline = false
+}) {
     const details = Array.isArray(item.details)
         ? item.details.filter(Boolean)
         : [];
@@ -171,6 +210,48 @@ function ItemDetails({ item }) {
         && detailsEs.length === 0
     ) {
         return null;
+    }
+
+    if (inline) {
+        const detailCount = Math.max(
+            details.length,
+            detailsEs.length
+        );
+
+        return (
+            <div className="mt-[0.16cqw] text-[0.62cqw] leading-[1.14] text-white/70">
+                {Array.from(
+                    { length: detailCount },
+                    (_, index) => {
+                        const detail =
+                            details[index] || '';
+
+                        const detailEs =
+                            detailsEs[index] || '';
+
+                        return (
+                            <p
+                                key={`${detail}-${detailEs}-${index}`}
+                            >
+                                {detail}
+
+                                {detail && detailEs && (
+                                    <span className="mx-[0.28cqw] text-[#f4c542]/65">
+                                        |
+                                    </span>
+                                )}
+
+                                {detailEs && (
+                                    <span className="text-white/52">
+                                        {detailEs}
+                                    </span>
+                                )}
+                            </p>
+                        );
+                    }
+                )}
+            </div>
+        );
     }
 
     return (
@@ -192,12 +273,18 @@ function ItemDetails({ item }) {
 }
 
 function MenuItem({ item }) {
-    const visiblePrices = (
-        item.priceOptions || []
-    ).filter(
-        (priceOption) =>
-            priceOption.enabled !== false
-    );
+    const visiblePrices = item.pricingGroupId
+        ? []
+        : (
+            item.priceOptions || []
+        ).filter(
+            (priceOption) =>
+                priceOption.enabled !== false
+        );
+
+    const inlineTranslations =
+        item.translationLayout === 'inline'
+        || item.id === 'fountain_drinks_and_tea';
 
     return (
         <article className="min-w-0">
@@ -228,9 +315,13 @@ function MenuItem({ item }) {
                     <BilingualDescription
                         description={item.description}
                         descriptionEs={item.descriptionEs}
+                        inline={inlineTranslations}
                     />
 
-                    <ItemDetails item={item} />
+                    <ItemDetails
+                        item={item}
+                        inline={inlineTranslations}
+                    />
                 </div>
 
                 {visiblePrices.length > 0 && (
@@ -243,10 +334,10 @@ function MenuItem({ item }) {
                                 >
                                     {(priceOption.label
                                         || priceOption.labelEs) && (
-                                        <span className="mr-[0.3cqw] text-[0.54cqw] font-bold uppercase text-white/55">
-                                            {priceOption.label}
-                                        </span>
-                                    )}
+                                            <span className="mr-[0.3cqw] text-[0.54cqw] font-bold uppercase text-white/55">
+                                                {priceOption.label}
+                                            </span>
+                                        )}
 
                                     <span className="text-[1.02cqw] font-black text-[#f4c542]">
                                         {formatPrice(
@@ -262,6 +353,107 @@ function MenuItem({ item }) {
         </article>
     );
 }
+function CompactBeerGroup({ items = [] }) {
+    const visibleItems = items
+        .map((item) => {
+            const priceOption = (
+                item.priceOptions || []
+            ).find(
+                (option) =>
+                    option.enabled !== false
+            );
+
+            if (!priceOption) {
+                return null;
+            }
+
+            const label = String(
+                item.name || ''
+            )
+                .replace(/\s+beer$/i, '')
+                .trim();
+
+            const labelEs = String(
+                item.nameEs || ''
+            )
+                .replace(/^cerveza\s+/i, '')
+                .trim();
+
+            return {
+                id: item.id,
+                label: label || item.name,
+                labelEs: labelEs || item.nameEs,
+                priceCents: priceOption.priceCents
+            };
+        })
+        .filter(Boolean);
+
+    if (visibleItems.length === 0) {
+        return null;
+    }
+
+    return (
+        <section className="mt-[0.42cqw] border-t border-[#f4c542]/32 pt-[0.42cqw]">
+            <h3
+                style={DISPLAY_FONT_STYLE}
+                className="
+                    mb-[0.38cqw]
+                    text-center
+                    text-[1.12cqw]
+                    leading-none
+                    uppercase
+                    text-[#f4c542]
+                "
+            >
+                BEERS
+
+                <span className="mx-[0.34cqw] text-white/45">
+                    |
+                </span>
+
+                CERVEZAS
+            </h3>
+
+            <div
+                className="grid gap-[0.85cqw]"
+                style={{
+                    gridTemplateColumns:
+                        `repeat(${visibleItems.length}, minmax(0, 1fr))`
+                }}
+            >
+                {visibleItems.map((item) => (
+                    <div
+                        key={item.id}
+                        className="
+                            flex
+                            items-baseline
+                            justify-center
+                            gap-[0.34cqw]
+                            whitespace-nowrap
+                        "
+                    >
+                        <span className="text-[0.65cqw] font-black uppercase text-white">
+                            {item.label}
+
+                            {item.label && item.labelEs
+                                ? ' / '
+                                : ''}
+
+                            {item.labelEs}
+                        </span>
+
+                        <span className="text-[0.92cqw] font-black text-[#f4c542]">
+                            {formatPrice(
+                                item.priceCents
+                            )}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+}
+
 
 function SectionModifier({ modifier }) {
     return (
@@ -373,7 +565,10 @@ function PricingGroup({ pricingGroup }) {
 
 function MenuSection({
     section,
-    menu
+    menu,
+    beforeItemsContent = null,
+    afterItemId = '',
+    afterItemContent = null
 }) {
     const items = (section.items || [])
         .filter((item) => item.enabled !== false)
@@ -382,6 +577,26 @@ function MenuSection({
                 Number(firstItem.order || 0)
                 - Number(secondItem.order || 0)
         );
+
+    const beerItems =
+        section.id === 'drinks'
+            ? items.filter(
+                (item) =>
+                    COMPACT_BEER_ITEM_IDS.has(
+                        item.id
+                    )
+            )
+            : [];
+
+    const firstBeerItemId =
+        beerItems[0]?.id || '';
+
+    const itemSpacingClass =
+        items.length >= 7
+            ? 'space-y-[0.72cqw]'
+            : items.length >= 5
+                ? 'space-y-[0.86cqw]'
+                : 'space-y-[1cqw]';
 
     const pricingGroupId = items.find(
         (item) => item.pricingGroupId
@@ -450,16 +665,18 @@ function MenuSection({
 
                 {(section.subtitle
                     || section.subtitleEs) && (
-                    <p className="mt-[0.24cqw] text-[0.62cqw] leading-[1.1] font-bold uppercase tracking-[0.08em] text-white/70">
-                        {section.subtitle}
-                        {section.subtitle
-                            && section.subtitleEs
-                            ? ' · '
-                            : ''}
-                        {section.subtitleEs}
-                    </p>
-                )}
+                        <p className="mt-[0.24cqw] text-[0.62cqw] leading-[1.1] font-bold uppercase tracking-[0.08em] text-white/70">
+                            {section.subtitle}
+                            {section.subtitle
+                                && section.subtitleEs
+                                ? ' · '
+                                : ''}
+                            {section.subtitleEs}
+                        </p>
+                    )}
             </header>
+
+            {beforeItemsContent}
 
             {section.id === 'bbq_sauces' && (
                 <div className="mb-[0.58cqw]">
@@ -469,30 +686,74 @@ function MenuSection({
                 </div>
             )}
 
-            <div className="space-y-[0.62cqw]">
+            <div className={itemSpacingClass}>
                 {startingModifiers.map((modifier) => (
                     <SectionModifier
                         key={modifier.id}
                         modifier={modifier}
                     />
                 ))}
+                {items.map((item) => {
+                    const isBeerItem =
+                        COMPACT_BEER_ITEM_IDS.has(
+                            item.id
+                        );
 
-                {items.map((item) => (
-                    <div
-                        key={item.id}
-                        className="space-y-[0.52cqw]"
-                    >
-                        <MenuItem item={item} />
+                    if (isBeerItem) {
+                        if (
+                            item.id
+                            !== firstBeerItemId
+                        ) {
+                            return null;
+                        }
 
-                        {modifiersAfterItem(item.id)
-                            .map((modifier) => (
-                                <SectionModifier
-                                    key={modifier.id}
-                                    modifier={modifier}
+                        return (
+                            <div
+                                key="compact_beer_group"
+                                className="space-y-[0.52cqw]"
+                            >
+                                <CompactBeerGroup
+                                    items={beerItems}
                                 />
-                            ))}
-                    </div>
-                ))}
+
+                                {beerItems.flatMap(
+                                    (beerItem) =>
+                                        modifiersAfterItem(
+                                            beerItem.id
+                                        ).map(
+                                            (modifier) => (
+                                                <SectionModifier
+                                                    key={modifier.id}
+                                                    modifier={modifier}
+                                                />
+                                            )
+                                        )
+                                )}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div
+                            key={item.id}
+                            className="space-y-[0.52cqw]"
+                        >
+                            <MenuItem item={item} />
+
+                            {modifiersAfterItem(item.id)
+                                .map((modifier) => (
+                                    <SectionModifier
+                                        key={modifier.id}
+                                        modifier={modifier}
+                                    />
+                                ))}
+
+                            {afterItemContent
+                                && afterItemId === item.id
+                                && afterItemContent}
+                        </div>
+                    );
+                })}
 
                 {endingModifiers.map((modifier) => (
                     <SectionModifier
@@ -564,6 +825,9 @@ export default function SidesMenuPreview({ menu }) {
         'sides_and_desserts'
     );
 
+    const fountainFlavorSettings =
+        menu?.fountainFlavors || {};
+
     const visibleSectionCount = columns.reduce(
         (total, column) => total + column.length,
         0
@@ -578,33 +842,69 @@ export default function SidesMenuPreview({ menu }) {
             className="w-full h-full overflow-hidden bg-[#0d0d0c] text-white"
         >
             <div className="h-full flex flex-col px-[1.4cqw] pt-[0.85cqw] pb-[0.65cqw]">
-                <div className="shrink-0 mb-[0.72cqw]">
-                    <PricingGroup
-                        pricingGroup={sidesPricing}
-                    />
-                </div>
 
                 {visibleSectionCount > 0 ? (
-                    <main className="flex-1 min-h-0 grid grid-cols-3 gap-[1.45cqw]">
-                        {columns.map(
-                            (column, columnIndex) => (
-                                <div
-                                    key={
-                                        COLUMN_SECTIONS[
-                                            columnIndex
-                                        ].join('-')
+                    <main
+                        className="
+                            flex-1
+                            min-h-0
+                            grid
+                            grid-cols-3
+                            grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]
+                            gap-x-[1.45cqw]
+                            gap-y-[1.15cqw]
+                        "
+                    >
+                        {columns.flat().map((section) => (
+                            <div
+                                key={section.id}
+                                className={`
+                min-w-0
+                self-start
+                ${SECTION_GRID_PLACEMENT[
+                                    section.id
+                                    ] || ''}
+            `}
+                            >
+                                <MenuSection
+                                    section={section}
+                                    menu={menu}
+                                    beforeItemsContent={
+                                        section.id === 'drinks'
+                                            ? (
+                                                <FountainFlavorGrid
+                                                    enabled={
+                                                        fountainFlavorSettings
+                                                            .enabled
+                                                        !== false
+                                                    }
+                                                    showTitle={false}
+                                                    brandIds={
+                                                        Array.isArray(
+                                                            fountainFlavorSettings
+                                                                .brandIds
+                                                        )
+                                                            && fountainFlavorSettings
+                                                                .brandIds
+                                                                .length > 0
+                                                            ? fountainFlavorSettings
+                                                                .brandIds
+                                                            : undefined
+                                                    }
+                                                />
+                                            )
+                                            : null
                                     }
-                                    className="min-w-0 min-h-0 flex flex-col justify-between gap-[1.05cqw]"
-                                >
-                                    {column.map((section) => (
-                                        <MenuSection
-                                            key={section.id}
-                                            section={section}
-                                            menu={menu}
-                                        />
-                                    ))}
-                                </div>
-                            )
+                                />
+                            </div>
+                        ))}
+
+                        {sidesPricing && (
+                            <div className="col-start-1 row-start-2 min-w-0 self-start">
+                                <PricingGroup
+                                    pricingGroup={sidesPricing}
+                                />
+                            </div>
                         )}
                     </main>
                 ) : (

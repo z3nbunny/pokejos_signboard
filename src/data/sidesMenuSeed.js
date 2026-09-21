@@ -433,19 +433,19 @@ export const SIDES_MENU_SEED = {
             items: [
                 createItem({
                     id: 'fountain_drinks_and_tea',
-                    name: 'Fountain Drinks & Iced Tea',
-                    nameEs:
-                        'Refrescos de Fuente y Té Helado',
+                    name: 'Soda & Iced Tea',
+                    nameEs: 'Refrescos y Té Helado',
                     description:
-                        '32 oz · Free refills · Smaller cup available at the same price',
+                        '16 or 32 oz · Free refills · Sweet or unsweet tea',
                     descriptionEs:
-                        '32 oz · Rellenos gratis · Vaso pequeño disponible al mismo precio',
+                        '16 o 32 oz · Rellenos gratis · Té dulce o sin azúcar',
                     details: [
-                        '8 oz drink included with kids meals'
+                        '8 oz included with kids meals'
                     ],
                     detailsEs: [
-                        'Bebida de 8 oz incluida con comidas infantiles'
+                        '8 oz incluido con comidas infantiles'
                     ],
+                    translationLayout: 'inline',
                     priceOptions: [
                         {
                             id: 'standard',
@@ -460,6 +460,24 @@ export const SIDES_MENU_SEED = {
                     id: 'milk',
                     name: 'Milk',
                     nameEs: 'Leche',
+                    description: '16 oz',
+                    descriptionEs: '16 oz',
+                    translationLayout: 'inline',
+                    priceOptions: [
+                        {
+                            id: 'standard',
+                            label: '',
+                            labelEs: '',
+                            priceCents: 300
+                        }
+                    ],
+                    order: 30
+                }),
+
+                createItem({
+                    id: 'lemonade',
+                    name: 'Lemonade',
+                    nameEs: 'Limonada',
                     priceOptions: [
                         {
                             id: 'standard',
@@ -482,7 +500,7 @@ export const SIDES_MENU_SEED = {
                             priceCents: 375
                         }
                     ],
-                    order: 30
+                    order: 40
                 }),
                 createItem({
                     id: 'imported_beer',
@@ -496,7 +514,7 @@ export const SIDES_MENU_SEED = {
                             priceCents: 425
                         }
                     ],
-                    order: 40
+                    order: 50
                 })
             ]
         }

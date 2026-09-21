@@ -387,10 +387,11 @@ function ItemEditor({
                                 return;
                             }
 
-                            changeField(
-                                'pricingGroupId',
-                                nextValue
-                            );
+                            onChange({
+                                ...item,
+                                pricingGroupId: nextValue,
+                                priceOptions: []
+                            });
                         }}
                         disabled={disabled}
                         className="w-full rounded-xl border border-border bg-bg px-4 py-2.5 disabled:opacity-50"

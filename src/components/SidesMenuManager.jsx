@@ -280,9 +280,13 @@ const createCleanMenu = (menu) => ({
             pricingGroupId: cleanText(
                 item.pricingGroupId
             ),
-            priceOptions: cleanPriceOptions(
-                item.priceOptions
-            ),
+            priceOptions: cleanText(
+                item.pricingGroupId
+            )
+                ? []
+                : cleanPriceOptions(
+                    item.priceOptions
+                ),
             bulkPriceEligible:
                 item.bulkPriceEligible !== false,
             enabled: item.enabled !== false,
@@ -1867,49 +1871,49 @@ export default function SidesMenuManager({
                         className="rounded-3xl"
                     >
                         <MenuWorkspacePanel
-                        panelKey={`sides-section-${section.id}`}
-                        title={
-                            section.titleEs
-                                ? `${section.title} / ${section.titleEs}`
-                                : section.title
-                        }
-                        description={`${(section.items || []).length} items · ${(section.modifiers || []).length} modifiers`}
-                        summary={
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-text-secondary">
-                                <span>
-                                    {(section.items || [])
-                                        .filter(
-                                            (item) =>
-                                                item.enabled !== false
-                                        )
-                                        .length}{' '}
-                                    visible
-                                </span>
-
-                                {section.enabled === false && (
-                                    <span className="rounded-full bg-zinc-200 px-2.5 py-1 uppercase text-zinc-700">
-                                        Section hidden
+                            panelKey={`sides-section-${section.id}`}
+                            title={
+                                section.titleEs
+                                    ? `${section.title} / ${section.titleEs}`
+                                    : section.title
+                            }
+                            description={`${(section.items || []).length} items · ${(section.modifiers || []).length} modifiers`}
+                            summary={
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-text-secondary">
+                                    <span>
+                                        {(section.items || [])
+                                            .filter(
+                                                (item) =>
+                                                    item.enabled !== false
+                                            )
+                                            .length}{' '}
+                                        visible
                                     </span>
-                                )}
-                            </div>
-                        }
-                    >
-                        <SidesMenuSectionEditor
-                            section={section}
-                            pricingGroups={
-                                draftMenu.pricingGroups || []
+
+                                    {section.enabled === false && (
+                                        <span className="rounded-full bg-zinc-200 px-2.5 py-1 uppercase text-zinc-700">
+                                            Section hidden
+                                        </span>
+                                    )}
+                                </div>
                             }
-                            disabled={saving || publishing}
-                            onChange={(nextSection) =>
-                                updateSection(
-                                    section.id,
-                                    nextSection
-                                )
-                            }
-                        />
-                    </MenuWorkspacePanel>
-                </MenuEditorCard>
-            ))}
+                        >
+                            <SidesMenuSectionEditor
+                                section={section}
+                                pricingGroups={
+                                    draftMenu.pricingGroups || []
+                                }
+                                disabled={saving || publishing}
+                                onChange={(nextSection) =>
+                                    updateSection(
+                                        section.id,
+                                        nextSection
+                                    )
+                                }
+                            />
+                        </MenuWorkspacePanel>
+                    </MenuEditorCard>
+                ))}
             </div>
 
             <div className="sticky bottom-4 flex flex-col gap-4 rounded-2xl border border-border bg-surface/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
@@ -1942,5 +1946,5 @@ export default function SidesMenuManager({
                 </button>
             </div>
         </div>
-            );
+    );
 }
