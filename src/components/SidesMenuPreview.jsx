@@ -18,13 +18,11 @@ const COLUMN_SECTIONS = [
     ['desserts', 'drinks']
 ];
 
-const SECTION_GRID_PLACEMENT = {
-    hot_sides: 'col-start-1 row-start-1',
-    cold_sides: 'col-start-2 row-start-1',
-    desserts: 'col-start-3 row-start-1',
-    bbq_sauces: 'col-start-2 row-start-2',
-    drinks: 'col-start-3 row-start-2'
-};
+const COLUMN_GAP_CLASSES = [
+    'gap-[0.9cqw]',
+    'gap-[2.8cqw]',
+    'gap-[4.2cqw]'
+];
 
 const COMPACT_BEER_ITEM_IDS = new Set([
     'domestic_beer',
@@ -850,62 +848,70 @@ export default function SidesMenuPreview({ menu }) {
                             min-h-0
                             grid
                             grid-cols-3
-                            grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]
                             gap-x-[1.45cqw]
-                            gap-y-[1.15cqw]
                         "
                     >
-                        {columns.flat().map((section) => (
+                        {columns.map((column, columnIndex) => (
                             <div
-                                key={section.id}
+                                key={
+                                    COLUMN_SECTIONS[
+                                        columnIndex
+                                    ].join('-')
+                                }
                                 className={`
-                min-w-0
-                self-start
-                ${SECTION_GRID_PLACEMENT[
-                                    section.id
-                                    ] || ''}
+                                    min-w-0
+                                    min-h-0
+                                    flex
+                                    flex-col
+                                    ${COLUMN_GAP_CLASSES[
+                                        columnIndex
+                                    ] || 'gap-[1cqw]'}
             `}
                             >
-                                <MenuSection
-                                    section={section}
-                                    menu={menu}
-                                    beforeItemsContent={
-                                        section.id === 'drinks'
-                                            ? (
-                                                <FountainFlavorGrid
-                                                    enabled={
-                                                        fountainFlavorSettings
-                                                            .enabled
-                                                        !== false
-                                                    }
-                                                    showTitle={false}
-                                                    brandIds={
-                                                        Array.isArray(
+                                {column.map((section) => (
+                                    <MenuSection
+                                        key={section.id}
+                                        section={section}
+                                        menu={menu}
+                                        beforeItemsContent={
+                                            section.id === 'drinks'
+                                                ? (
+                                                    <FountainFlavorGrid
+                                                        enabled={
                                                             fountainFlavorSettings
-                                                                .brandIds
-                                                        )
-                                                            && fountainFlavorSettings
-                                                                .brandIds
-                                                                .length > 0
-                                                            ? fountainFlavorSettings
-                                                                .brandIds
-                                                            : undefined
-                                                    }
-                                                />
-                                            )
-                                            : null
-                                    }
-                                />
+                                                                .enabled
+                                                            !== false
+                                                        }
+                                                        showTitle={false}
+                                                        brandIds={
+                                                            Array.isArray(
+                                                                fountainFlavorSettings
+                                                                    .brandIds
+                                                            )
+                                                                && fountainFlavorSettings
+                                                                    .brandIds
+                                                                    .length > 0
+                                                                ? fountainFlavorSettings
+                                                                    .brandIds
+                                                                : undefined
+                                                        }
+                                                    />
+                                                )
+                                                : null
+                                        }
+                                    />
+                                ))}
+
+                                {columnIndex === 0
+                                    && sidesPricing && (
+                                        <PricingGroup
+                                            pricingGroup={
+                                                sidesPricing
+                                            }
+                                        />
+                                    )}
                             </div>
                         ))}
-
-                        {sidesPricing && (
-                            <div className="col-start-1 row-start-2 min-w-0 self-start">
-                                <PricingGroup
-                                    pricingGroup={sidesPricing}
-                                />
-                            </div>
-                        )}
                     </main>
                 ) : (
                     <main className="flex-1 flex items-center justify-center text-center">

@@ -436,14 +436,16 @@ export const SIDES_MENU_SEED = {
                     name: 'Soda & Iced Tea',
                     nameEs: 'Refrescos y Té Helado',
                     description:
-                        '16 or 32 oz · Free refills · Sweet or unsweet tea',
+                        '16/32 oz · Free refills',
                     descriptionEs:
-                        '16 o 32 oz · Rellenos gratis · Té dulce o sin azúcar',
+                        '16/32 oz · Rellenos gratis',
                     details: [
-                        '8 oz included with kids meals'
+                        'Sweet or unsweet tea',
+                        '8 oz with kids meals'
                     ],
                     detailsEs: [
-                        '8 oz incluido con comidas infantiles'
+                        'Té dulce o sin azúcar',
+                        '8 oz con comidas infantiles'
                     ],
                     translationLayout: 'inline',
                     priceOptions: [
