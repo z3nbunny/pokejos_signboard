@@ -19,10 +19,18 @@ const COLUMN_SECTIONS = [
 ];
 
 const COLUMN_GAP_CLASSES = [
-    'gap-[0.9cqw]',
-    'gap-[2.8cqw]',
+    'gap-[1.6cqw]',
+    'gap-[3.6cqw]',
     'gap-[4.2cqw]'
 ];
+
+const SECTION_ITEM_SPACING_CLASSES = {
+    hot_sides: 'space-y-[1.6cqw]',
+    cold_sides: 'space-y-[1.55cqw]',
+    desserts: 'space-y-[1.32cqw]',
+    bbq_sauces: 'space-y-[1.45cqw]',
+    drinks: 'space-y-[1.08cqw]'
+};
 
 const COMPACT_BEER_ITEM_IDS = new Set([
     'domestic_beer',
@@ -399,51 +407,46 @@ function CompactBeerGroup({ items = [] }) {
     }
 
     return (
-        <section className="mt-[0.42cqw] border-t border-[#f4c542]/32 pt-[0.42cqw]">
+        <section className="border-t border-[#f4c542]/32 pt-[0.5cqw]">
             <h3
                 style={DISPLAY_FONT_STYLE}
                 className="
-                    mb-[0.38cqw]
+                    mb-[0.62cqw]
                     text-center
-                    text-[1.12cqw]
-                    leading-none
+                    text-[1.55cqw]
+                    leading-[1.02]
                     uppercase
+                    tracking-[0.025em]
                     text-[#f4c542]
                 "
             >
                 BEERS
 
-                <span className="mx-[0.34cqw] text-white/45">
+                <span className="mx-[0.42cqw] text-white/42">
                     |
                 </span>
 
                 CERVEZAS
             </h3>
 
-            <div
-                className="grid gap-[0.85cqw]"
-                style={{
-                    gridTemplateColumns:
-                        `repeat(${visibleItems.length}, minmax(0, 1fr))`
-                }}
-            >
+            <div className="space-y-[0.72cqw]">
                 {visibleItems.map((item) => (
                     <div
                         key={item.id}
-                        className="min-w-0 text-center"
+                        className="min-w-0"
                     >
-                        <div className="flex items-baseline justify-center gap-[0.34cqw] whitespace-nowrap">
-                            <span className="text-[0.65cqw] font-black uppercase text-white">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-[0.7cqw]">
+                            <span className="text-[1.02cqw] leading-none font-black uppercase text-white">
                                 {item.label}
 
                                 {item.label && item.labelEs
-                                    ? ' / '
+                                    ? ' | '
                                     : ''}
 
                                 {item.labelEs}
                             </span>
 
-                            <span className="text-[0.92cqw] font-black text-[#f4c542]">
+                            <span className="text-[1.02cqw] leading-none font-black text-[#f4c542]">
                                 {formatPrice(
                                     item.priceCents
                                 )}
@@ -451,7 +454,7 @@ function CompactBeerGroup({ items = [] }) {
                         </div>
 
                         {item.brandText && (
-                            <p className="mt-[0.18cqw] text-[0.56cqw] leading-[1.15] font-semibold text-white/68">
+                            <p className="mt-[0.24cqw] text-[0.62cqw] leading-[1.18] font-semibold text-white/68">
                                 {item.brandText}
                             </p>
                         )}
@@ -512,25 +515,54 @@ function PricingGroup({ pricingGroup }) {
             priceOption.enabled !== false
     );
 
+    const isSidesPricing =
+        pricingGroup.id === 'sides_and_desserts';
+
+    const priceRows = (
+        isSidesPricing
+            ? [
+                prices.slice(0, 3),
+                prices.slice(3)
+            ]
+            : [prices]
+    ).filter(
+        (priceRow) => priceRow.length > 0
+    );
+
+    const titleSizeClass = isSidesPricing
+        ? 'text-[1.02cqw]'
+        : 'text-[0.86cqw]';
+
     return (
-        <section className="rounded-[0.55cqw] border border-[#f4c542]/45 bg-[#f4c542]/8 px-[0.78cqw] py-[0.52cqw]">
+        <section
+            className={`
+                rounded-[0.55cqw]
+                border
+                border-[#f4c542]/45
+                bg-[#f4c542]/8
+                ${isSidesPricing
+                    ? 'px-[0.92cqw] py-[0.68cqw]'
+                    : 'px-[0.78cqw] py-[0.52cqw]'
+                }
+            `}
+        >
             <div className="flex items-center justify-center gap-[0.4cqw] text-center">
                 <h2
                     style={DISPLAY_FONT_STYLE}
-                    className="text-[0.86cqw] leading-none uppercase tracking-[0.025em] text-[#f4c542]"
+                    className={`${titleSizeClass} leading-none uppercase tracking-[0.025em] text-[#f4c542]`}
                 >
                     {pricingGroup.title}
                 </h2>
 
                 {pricingGroup.titleEs && (
                     <>
-                        <span className="text-[0.75cqw] text-white/38">
+                        <span className="text-[0.82cqw] text-white/38">
                             |
                         </span>
 
                         <h2
                             style={DISPLAY_FONT_STYLE}
-                            className="text-[0.86cqw] leading-none uppercase tracking-[0.025em] text-[#f4c542]"
+                            className={`${titleSizeClass} leading-none uppercase tracking-[0.025em] text-[#f4c542]`}
                         >
                             {pricingGroup.titleEs}
                         </h2>
@@ -539,39 +571,105 @@ function PricingGroup({ pricingGroup }) {
             </div>
 
             <div
-                className="mt-[0.44cqw] grid gap-[0.42cqw]"
-                style={{
-                    gridTemplateColumns:
-                        `repeat(${Math.max(prices.length, 1)}, minmax(0, 1fr))`
-                }}
+                className={
+                    isSidesPricing
+                        ? 'mt-[0.62cqw] space-y-[0.62cqw]'
+                        : 'mt-[0.44cqw]'
+                }
             >
-                {prices.map((priceOption) => (
-                    <div
-                        key={priceOption.id}
-                        className="flex flex-col text-center leading-none"
-                    >
-                        <p className="text-[0.56cqw] font-bold uppercase tracking-[0.04em] text-white/68">
-                            {priceOption.label}
-                            {priceOption.label
-                                && priceOption.labelEs
-                                ? ' | '
-                                : ''}
-                            {priceOption.labelEs}
-                        </p>
+                {priceRows.map(
+                    (priceRow, rowIndex) => (
+                        <div
+                            key={`pricing-row-${rowIndex}`}
+                            className={`
+                                grid
+                                gap-[0.52cqw]
+                                ${isSidesPricing
+                                    && rowIndex > 0
+                                    ? 'border-t border-[#f4c542]/25 pt-[0.62cqw]'
+                                    : ''
+                                }
+                            `}
+                            style={{
+                                gridTemplateColumns:
+                                    `repeat(${priceRow.length}, minmax(0, 1fr))`
+                            }}
+                        >
+                            {priceRow.map(
+                                (priceOption) => (
+                                    <div
+                                        key={priceOption.id}
+                                        className="flex flex-col text-center leading-none"
+                                    >
+                                        <p
+                                            className={`
+                                                font-bold
+                                                uppercase
+                                                tracking-[0.04em]
+                                                text-white/72
+                                                ${isSidesPricing
+                                                    ? 'text-[0.72cqw]'
+                                                    : 'text-[0.56cqw]'
+                                                }
+                                            `}
+                                        >
+                                            {priceOption.label}
 
-                        {priceOption.serves && (
-                            <p className="mt-[0.2cqw] text-[0.5cqw] leading-none font-bold uppercase tracking-[0.035em] text-white/62">
-                                Serves / Rinde {priceOption.serves}
-                            </p>
-                        )}
+                                            {!isSidesPricing
+                                                && priceOption.label
+                                                && priceOption.labelEs
+                                                ? ' | '
+                                                : ''}
 
-                        <p className="mt-auto pt-[0.24cqw] text-[0.92cqw] font-black text-white">
-                            {formatPrice(
-                                priceOption.priceCents
+                                            {!isSidesPricing
+                                                && priceOption.labelEs}
+                                        </p>
+
+                                        {priceOption.serves && (
+                                            <p
+                                                className={`
+                                                    mt-[0.24cqw]
+                                                    leading-none
+                                                    font-bold
+                                                    uppercase
+                                                    tracking-[0.035em]
+                                                    text-white/62
+                                                    ${isSidesPricing
+                                                        ? 'text-[0.62cqw]'
+                                                        : 'text-[0.5cqw]'
+                                                    }
+                                                `}
+                                            >
+                                                {isSidesPricing
+                                                    ? 'Serves '
+                                                    : 'Serves / Rinde '}
+
+                                                {priceOption.serves}
+                                            </p>
+                                        )}
+
+                                        <p
+                                            className={`
+                                                mt-auto
+                                                pt-[0.3cqw]
+                                                font-black
+                                                text-white
+                                                ${isSidesPricing
+                                                    ? 'text-[1.08cqw]'
+                                                    : 'text-[0.92cqw]'
+                                                }
+                                            `}
+                                        >
+                                            {formatPrice(
+                                                priceOption.priceCents
+                                            )}
+                                        </p>
+                                    </div>
+                                )
                             )}
-                        </p>
-                    </div>
-                ))}
+                        </div>
+                    )
+                )}
             </div>
         </section>
     );
@@ -606,11 +704,15 @@ function MenuSection({
         beerItems[0]?.id || '';
 
     const itemSpacingClass =
-        items.length >= 7
-            ? 'space-y-[0.94cqw]'
-            : items.length >= 5
-                ? 'space-y-[1.06cqw]'
-                : 'space-y-[1.14cqw]';
+        SECTION_ITEM_SPACING_CLASSES[
+        section.id
+        ] || (
+            items.length >= 7
+                ? 'space-y-[0.94cqw]'
+                : items.length >= 5
+                    ? 'space-y-[1.06cqw]'
+                    : 'space-y-[1.14cqw]'
+        );
 
     const pricingGroupId = items.find(
         (item) => item.pricingGroupId
@@ -692,14 +794,6 @@ function MenuSection({
 
             {beforeItemsContent}
 
-            {section.id === 'bbq_sauces' && (
-                <div className="mb-[0.58cqw]">
-                    <PricingGroup
-                        pricingGroup={pricingGroup}
-                    />
-                </div>
-            )}
-
             <div className={itemSpacingClass}>
                 {startingModifiers.map((modifier) => (
                     <SectionModifier
@@ -776,6 +870,14 @@ function MenuSection({
                     />
                 ))}
             </div>
+            {section.id === 'bbq_sauces' && (
+                <div className="mt-[0.72cqw]">
+                    <PricingGroup
+                        pricingGroup={pricingGroup}
+                    />
+                </div>
+            )}
+
         </section>
     );
 }
@@ -889,7 +991,12 @@ export default function SidesMenuPreview({ menu }) {
                                         key={section.id}
                                         section={section}
                                         menu={menu}
-                                        beforeItemsContent={
+                                        afterItemId={
+                                            section.id === 'drinks'
+                                                ? 'milk'
+                                                : ''
+                                        }
+                                        afterItemContent={
                                             section.id === 'drinks'
                                                 ? (
                                                     <FountainFlavorGrid
@@ -898,7 +1005,9 @@ export default function SidesMenuPreview({ menu }) {
                                                                 .enabled
                                                             !== false
                                                         }
-                                                        showTitle={false}
+                                                        showTitle
+                                                        title="SODA FLAVORS"
+                                                        titleEs="SABORES DE REFRESCOS"
                                                         brandIds={
                                                             Array.isArray(
                                                                 fountainFlavorSettings
