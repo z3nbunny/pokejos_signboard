@@ -158,6 +158,7 @@ const cleanPriceOptions = (priceOptions) =>
                 || `price_${index + 1}`,
             label: cleanText(priceOption.label),
             labelEs: cleanText(priceOption.labelEs),
+            serves: cleanText(priceOption.serves),
             priceCents: Number(priceOption.priceCents),
             order:
                 Number(priceOption.order)
@@ -1701,28 +1702,56 @@ export default function SidesMenuManager({
                                                         </div>
                                                     </div>
 
-                                                    <div>
-                                                        <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
-                                                            Price
-                                                        </label>
-                                                        <PriceInput
-                                                            priceCents={
-                                                                priceOption
-                                                                    .priceCents
-                                                            }
-                                                            onChange={(priceCents) =>
-                                                                updatePricingGroupPrice(
-                                                                    pricingGroup.id,
-                                                                    priceOption.id,
-                                                                    'priceCents',
-                                                                    priceCents
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                saving
-                                                                || publishing
-                                                            }
-                                                        />
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        <div>
+                                                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                                                                Price
+                                                            </label>
+                                                            <PriceInput
+                                                                priceCents={
+                                                                    priceOption.priceCents
+                                                                }
+                                                                onChange={(priceCents) =>
+                                                                    updatePricingGroupPrice(
+                                                                        pricingGroup.id,
+                                                                        priceOption.id,
+                                                                        'priceCents',
+                                                                        priceCents
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    saving
+                                                                    || publishing
+                                                                }
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                                                                Serves (optional)
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={
+                                                                    priceOption.serves
+                                                                    || ''
+                                                                }
+                                                                placeholder="Example: 2–4"
+                                                                onChange={(event) =>
+                                                                    updatePricingGroupPrice(
+                                                                        pricingGroup.id,
+                                                                        priceOption.id,
+                                                                        'serves',
+                                                                        event.target.value
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    saving
+                                                                    || publishing
+                                                                }
+                                                                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm disabled:opacity-50"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1826,8 +1855,7 @@ export default function SidesMenuManager({
                                                     </label>
                                                     <PriceInput
                                                         priceCents={
-                                                            priceOption
-                                                                .priceCents
+                                                            priceOption.priceCents
                                                         }
                                                         onChange={(priceCents) =>
                                                             updateItemPrice(

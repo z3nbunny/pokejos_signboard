@@ -56,21 +56,22 @@ export const FOUNTAIN_DRINK_BRANDS = {
         tileVariant: 'wordmark'
     },
 
+        coca_cola: {
+        id: 'coca_cola',
+        name: 'Coca-Cola',
+        logo: cocaColaLogo,
+        scale: 1,
+        tileVariant: 'wordmark'
+    },
+
     diet_coke: {
         id: 'diet_coke',
         name: 'Diet Coke',
         logo: dietCokeLogo,
         scale: 1,
         tileVariant: 'wordmark'
-    },
-
-    coca_cola: {
-        id: 'coca_cola',
-        name: 'Coca-Cola',
-        logo: cocaColaLogo,
-        scale: 1,
-        tileVariant: 'wordmark'
     }
+
 };
 
 export const DEFAULT_FOUNTAIN_DRINK_BRAND_IDS = [
@@ -80,8 +81,9 @@ export const DEFAULT_FOUNTAIN_DRINK_BRAND_IDS = [
     'red_flash',
     'powerade',
     'sprite',
-    'diet_coke',
-    'coca_cola'
+    'coca_cola',
+    'diet_coke'
+
 ];
 
 export const getFountainDrinkBrands = (

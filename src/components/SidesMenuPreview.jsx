@@ -381,7 +381,15 @@ function CompactBeerGroup({ items = [] }) {
                 id: item.id,
                 label: label || item.name,
                 labelEs: labelEs || item.nameEs,
-                priceCents: priceOption.priceCents
+                priceCents: priceOption.priceCents,
+                brandText: [
+                    item.description,
+                    ...(Array.isArray(item.details)
+                        ? item.details
+                        : [])
+                ]
+                    .filter(Boolean)
+                    .join(' · ')
             };
         })
         .filter(Boolean);
@@ -422,29 +430,31 @@ function CompactBeerGroup({ items = [] }) {
                 {visibleItems.map((item) => (
                     <div
                         key={item.id}
-                        className="
-                            flex
-                            items-baseline
-                            justify-center
-                            gap-[0.34cqw]
-                            whitespace-nowrap
-                        "
+                        className="min-w-0 text-center"
                     >
-                        <span className="text-[0.65cqw] font-black uppercase text-white">
-                            {item.label}
+                        <div className="flex items-baseline justify-center gap-[0.34cqw] whitespace-nowrap">
+                            <span className="text-[0.65cqw] font-black uppercase text-white">
+                                {item.label}
 
-                            {item.label && item.labelEs
-                                ? ' / '
-                                : ''}
+                                {item.label && item.labelEs
+                                    ? ' / '
+                                    : ''}
 
-                            {item.labelEs}
-                        </span>
+                                {item.labelEs}
+                            </span>
 
-                        <span className="text-[0.92cqw] font-black text-[#f4c542]">
-                            {formatPrice(
-                                item.priceCents
-                            )}
-                        </span>
+                            <span className="text-[0.92cqw] font-black text-[#f4c542]">
+                                {formatPrice(
+                                    item.priceCents
+                                )}
+                            </span>
+                        </div>
+
+                        {item.brandText && (
+                            <p className="mt-[0.18cqw] text-[0.56cqw] leading-[1.15] font-semibold text-white/68">
+                                {item.brandText}
+                            </p>
+                        )}
                     </div>
                 ))}
             </div>
@@ -503,7 +513,7 @@ function PricingGroup({ pricingGroup }) {
     );
 
     return (
-        <section className="rounded-[0.55cqw] border border-[#f4c542]/45 bg-[#f4c542]/8 px-[0.72cqw] py-[0.42cqw]">
+        <section className="rounded-[0.55cqw] border border-[#f4c542]/45 bg-[#f4c542]/8 px-[0.78cqw] py-[0.52cqw]">
             <div className="flex items-center justify-center gap-[0.4cqw] text-center">
                 <h2
                     style={DISPLAY_FONT_STYLE}
@@ -529,7 +539,7 @@ function PricingGroup({ pricingGroup }) {
             </div>
 
             <div
-                className="mt-[0.36cqw] grid gap-[0.35cqw]"
+                className="mt-[0.44cqw] grid gap-[0.42cqw]"
                 style={{
                     gridTemplateColumns:
                         `repeat(${Math.max(prices.length, 1)}, minmax(0, 1fr))`
@@ -538,7 +548,7 @@ function PricingGroup({ pricingGroup }) {
                 {prices.map((priceOption) => (
                     <div
                         key={priceOption.id}
-                        className="text-center leading-none"
+                        className="flex flex-col text-center leading-none"
                     >
                         <p className="text-[0.56cqw] font-bold uppercase tracking-[0.04em] text-white/68">
                             {priceOption.label}
@@ -549,7 +559,13 @@ function PricingGroup({ pricingGroup }) {
                             {priceOption.labelEs}
                         </p>
 
-                        <p className="mt-[0.16cqw] text-[0.92cqw] font-black text-white">
+                        {priceOption.serves && (
+                            <p className="mt-[0.2cqw] text-[0.5cqw] leading-none font-bold uppercase tracking-[0.035em] text-white/62">
+                                Serves / Rinde {priceOption.serves}
+                            </p>
+                        )}
+
+                        <p className="mt-auto pt-[0.24cqw] text-[0.92cqw] font-black text-white">
                             {formatPrice(
                                 priceOption.priceCents
                             )}
@@ -591,10 +607,10 @@ function MenuSection({
 
     const itemSpacingClass =
         items.length >= 7
-            ? 'space-y-[0.72cqw]'
+            ? 'space-y-[0.94cqw]'
             : items.length >= 5
-                ? 'space-y-[0.86cqw]'
-                : 'space-y-[1cqw]';
+                ? 'space-y-[1.06cqw]'
+                : 'space-y-[1.14cqw]';
 
     const pricingGroupId = items.find(
         (item) => item.pricingGroupId
@@ -636,7 +652,7 @@ function MenuSection({
 
     return (
         <section className="min-h-0">
-            <header className="mb-[0.58cqw] text-center">
+            <header className="mb-[0.78cqw] text-center">
                 <div className="flex flex-wrap items-center justify-center gap-x-[0.42cqw] gap-y-[0.12cqw]">
                     <h1
                         style={DISPLAY_FONT_STYLE}
@@ -864,9 +880,9 @@ export default function SidesMenuPreview({ menu }) {
                                     flex
                                     flex-col
                                     ${COLUMN_GAP_CLASSES[
-                                        columnIndex
+                                    columnIndex
                                     ] || 'gap-[1cqw]'}
-            `}
+                                `}
                             >
                                 {column.map((section) => (
                                     <MenuSection

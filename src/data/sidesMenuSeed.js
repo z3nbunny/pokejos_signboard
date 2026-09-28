@@ -12,31 +12,36 @@ const createSideAndDessertPrices = () => [
         id: 'side_order',
         label: 'Side order',
         labelEs: 'Porción',
-        priceCents: 400
+        priceCents: 400,
+        serves: '1'
     },
     {
         id: 'pint',
         label: 'Pint',
         labelEs: 'Pinta',
-        priceCents: 800
+        priceCents: 800,
+        serves: '2-4'
     },
     {
         id: 'quart',
         label: 'Quart',
         labelEs: 'Cuarto de galón',
-        priceCents: 1400
+        priceCents: 1400,
+        serves: '6-8'
     },
     {
         id: 'half_gallon',
         label: 'Half gallon',
         labelEs: 'Medio galón',
-        priceCents: 2400
+        priceCents: 2400,
+        serves: '10-12'
     },
     {
         id: 'gallon',
         label: 'Gallon',
         labelEs: 'Galón',
-        priceCents: 4000
+        priceCents: 4000,
+        serves: '18-22'
     }
 ];
 
