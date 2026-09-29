@@ -2,6 +2,10 @@ import '@fontsource/rye/400.css';
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 
 import FountainFlavorGrid from './FountainFlavorGrid';
+import {
+    createMenuDisplayModel,
+    shouldShowSpanish
+} from '../utils/menuLanguage';
 
 const DISPLAY_FONT_STYLE = {
     fontFamily: 'Rye, serif'
@@ -359,7 +363,10 @@ function MenuItem({ item }) {
         </article>
     );
 }
-function CompactBeerGroup({ items = [] }) {
+function CompactBeerGroup({
+    items = [],
+    showSpanish = true
+}) {
     const visibleItems = items
         .map((item) => {
             const priceOption = (
@@ -422,11 +429,15 @@ function CompactBeerGroup({ items = [] }) {
             >
                 BEERS
 
-                <span className="mx-[0.42cqw] text-white/42">
-                    |
-                </span>
+                {showSpanish && (
+                    <>
+                        <span className="mx-[0.42cqw] text-white/42">
+                            |
+                        </span>
 
-                CERVEZAS
+                        CERVEZAS
+                    </>
+                )}
             </h3>
 
             <div className="space-y-[0.72cqw]">
@@ -503,7 +514,10 @@ function SectionModifier({ modifier }) {
     );
 }
 
-function PricingGroup({ pricingGroup }) {
+function PricingGroup({
+    pricingGroup,
+    showSpanish = true
+}) {
     if (!pricingGroup) {
         return null;
     }
@@ -640,7 +654,7 @@ function PricingGroup({ pricingGroup }) {
                                                     }
                                                 `}
                                             >
-                                                {isSidesPricing
+                                                {isSidesPricing || !showSpanish
                                                     ? 'Serves '
                                                     : 'Serves / Rinde '}
 
@@ -678,6 +692,7 @@ function PricingGroup({ pricingGroup }) {
 function MenuSection({
     section,
     menu,
+    showSpanish = true,
     beforeItemsContent = null,
     afterItemId = '',
     afterItemContent = null
@@ -822,6 +837,7 @@ function MenuSection({
                             >
                                 <CompactBeerGroup
                                     items={beerItems}
+                                    showSpanish={showSpanish}
                                 />
 
                                 {beerItems.flatMap(
@@ -874,6 +890,7 @@ function MenuSection({
                 <div className="mt-[0.72cqw]">
                     <PricingGroup
                         pricingGroup={pricingGroup}
+                        showSpanish={showSpanish}
                     />
                 </div>
             )}
@@ -882,7 +899,9 @@ function MenuSection({
     );
 }
 
-function DietaryLegend() {
+function DietaryLegend({
+    showSpanish = true
+}) {
     return (
         <div className="flex flex-wrap items-center justify-center gap-x-[0.78cqw] gap-y-[0.18cqw] text-[0.56cqw] font-bold text-white/78">
             {Object.entries(DIETARY_BADGES).map(
@@ -895,8 +914,13 @@ function DietaryLegend() {
 
                         <span>
                             {badge.label}
-                            {' / '}
-                            {badge.labelEs}
+
+                            {showSpanish && (
+                                <>
+                                    {' / '}
+                                    {badge.labelEs}
+                                </>
+                            )}
                         </span>
                     </div>
                 )
@@ -934,15 +958,22 @@ function AllergenNotice({ menu }) {
 }
 
 export default function SidesMenuPreview({ menu }) {
-    const columns = getVisibleSections(menu);
+    const showSpanish =
+        shouldShowSpanish(menu);
+
+    const displayMenu =
+        createMenuDisplayModel(menu);
+
+    const columns =
+        getVisibleSections(displayMenu);
 
     const sidesPricing = getPricingGroup(
-        menu,
+        displayMenu,
         'sides_and_desserts'
     );
 
     const fountainFlavorSettings =
-        menu?.fountainFlavors || {};
+        displayMenu?.fountainFlavors || {};
 
     const visibleSectionCount = columns.reduce(
         (total, column) => total + column.length,
@@ -990,7 +1021,8 @@ export default function SidesMenuPreview({ menu }) {
                                     <MenuSection
                                         key={section.id}
                                         section={section}
-                                        menu={menu}
+                                        menu={displayMenu}
+                                        showSpanish={showSpanish}
                                         afterItemId={
                                             section.id === 'drinks'
                                                 ? 'milk'
@@ -1007,7 +1039,11 @@ export default function SidesMenuPreview({ menu }) {
                                                         }
                                                         showTitle
                                                         title="SODA FLAVORS"
-                                                        titleEs="SABORES DE REFRESCOS"
+                                                        titleEs={
+                                                            showSpanish
+                                                                ? 'SABORES DE REFRESCOS'
+                                                                : ''
+                                                        }
                                                         brandIds={
                                                             Array.isArray(
                                                                 fountainFlavorSettings
@@ -1033,6 +1069,7 @@ export default function SidesMenuPreview({ menu }) {
                                             pricingGroup={
                                                 sidesPricing
                                             }
+                                            showSpanish={showSpanish}
                                         />
                                     )}
                             </div>
@@ -1047,8 +1084,13 @@ export default function SidesMenuPreview({ menu }) {
                 )}
 
                 <footer className="shrink-0 mt-[0.62cqw] border-t border-[#f4c542]/38 pt-[0.34cqw] space-y-[0.22cqw]">
-                    <DietaryLegend />
-                    <AllergenNotice menu={menu} />
+                    <DietaryLegend
+                        showSpanish={showSpanish}
+                    />
+                    <AllergenNotice
+                        menu={displayMenu}
+                        showSpanish={showSpanish}
+                    />
                 </footer>
             </div>
         </div>

@@ -23,6 +23,8 @@ import SidesMenuPreview from './SidesMenuPreview';
 import SidesMenuSectionEditor from './SidesMenuSectionEditor';
 import { SIDES_MENU_SEED } from '../data/sidesMenuSeed';
 
+import MenuLanguageToggle from './MenuLanguageToggle';
+
 const MENU_ID = 'sides';
 
 const MENU_PREVIEW_LOCATIONS = [
@@ -170,6 +172,7 @@ const createCleanMenu = (menu) => ({
         Number(menu.schemaVersion)
         || SIDES_MENU_SEED.schemaVersion,
     menuId: MENU_ID,
+    showSpanish: menu.showSpanish !== false,
     title: cleanText(menu.title),
     titleEs: cleanText(menu.titleEs),
     subtitle: cleanText(menu.subtitle),
@@ -519,6 +522,8 @@ export default function SidesMenuManager({
 
                 const loadedDraft = {
                     ...storedDraft,
+                    showSpanish:
+                        storedDraft.showSpanish !== false,
                     displayNotices: {
                         ...DEFAULT_DISPLAY_NOTICES,
                         ...(storedDraft.displayNotices || {})
@@ -1219,11 +1224,25 @@ export default function SidesMenuManager({
                             Private Draft
                         </span>
 
-                        {hasUnsavedChanges && (
-                            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase text-blue-800">
-                                Unsaved Changes
-                            </span>
-                        )}
+                        <span
+                            aria-hidden={!hasUnsavedChanges}
+                            className={`
+                                rounded-full
+                                bg-blue-100
+                                px-3
+                                py-1
+                                text-xs
+                                font-bold
+                                uppercase
+                                text-blue-800
+                                ${hasUnsavedChanges
+                                    ? ''
+                                    : 'invisible'
+                                }
+                            `}
+                        >
+                            Unsaved Changes
+                        </span>
                     </div>
 
                     <p className="mt-2 text-sm text-text-secondary">
@@ -1233,6 +1252,22 @@ export default function SidesMenuManager({
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    <MenuLanguageToggle
+                        showSpanish={
+                            draftMenu.showSpanish !== false
+                        }
+                        onChange={(showSpanish) =>
+                            updateMenuField(
+                                'showSpanish',
+                                showSpanish
+                            )
+                        }
+                        disabled={
+                            saving
+                            || publishing
+                            || sendingTvPreview
+                        }
+                    />
                     <button
                         type="button"
                         onClick={handleDiscardChanges}

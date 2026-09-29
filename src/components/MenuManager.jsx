@@ -21,6 +21,8 @@ import MenuEditorItemList from './MenuEditorItemList';
 import MenuPreviewThumbnail from './MenuPreviewThumbnail';
 import { MEAT_MENU_SEED } from '../data/meatMenuSeed';
 
+import MenuLanguageToggle from './MenuLanguageToggle';
+
 const DEFAULT_MEAT_AVAILABLE_ON = [
     'plates',
     'sandwiches',
@@ -1575,6 +1577,8 @@ export default function MenuManager({
                 const loadedDraft = storedDraft
                     ? {
                         ...storedDraft,
+                        showSpanish:
+                            storedDraft.showSpanish !== false,
                         displayNotices: {
                             ...DEFAULT_DISPLAY_NOTICES,
                             ...(
@@ -2741,6 +2745,8 @@ export default function MenuManager({
                 ),
                 {
                     title: draftMenu.title.trim(),
+                    showSpanish:
+                        draftMenu.showSpanish !== false,
                     titleEs:
                         draftMenu.titleEs?.trim() || '',
                     subtitle:
@@ -2865,6 +2871,8 @@ export default function MenuManager({
             };
 
             const previewMenu = {
+                showSpanish:
+                    storedDraft.showSpanish !== false,
                 title: String(
                     storedDraft.title || ''
                 ).trim(),
@@ -3077,6 +3085,8 @@ export default function MenuManager({
                         };
 
                         const publishedMenu = {
+                            showSpanish:
+                                storedDraft.showSpanish !== false,
                             title: String(
                                 storedDraft.title || ''
                             ).trim(),
@@ -3373,11 +3383,25 @@ export default function MenuManager({
                             Private Draft
                         </span>
 
-                        {hasUnsavedChanges && (
-                            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold uppercase">
-                                Unsaved Changes
-                            </span>
-                        )}
+                        <span
+                            aria-hidden={!hasUnsavedChanges}
+                            className={`
+                                rounded-full
+                                bg-blue-100
+                                px-3
+                                py-1
+                                text-xs
+                                font-bold
+                                uppercase
+                                text-blue-800
+                                ${hasUnsavedChanges
+                                    ? ''
+                                    : 'invisible'
+                                }
+                            `}
+                        >
+                            Unsaved Changes
+                        </span>
                     </div>
 
                     <p className="text-sm text-text-secondary mt-2">
@@ -3387,6 +3411,23 @@ export default function MenuManager({
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    <MenuLanguageToggle
+                        showSpanish={
+                            draftMenu.showSpanish !== false
+                        }
+                        onChange={(showSpanish) =>
+                            updateMenuField(
+                                'showSpanish',
+                                showSpanish
+                            )
+                        }
+                        disabled={
+                            saving
+                            || publishing
+                            || sendingTvPreview
+                        }
+                    />
+
                     <button
                         type="button"
                         onClick={handleDiscardChanges}

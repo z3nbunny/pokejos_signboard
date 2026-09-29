@@ -108,6 +108,7 @@ const BULK_SAUCES_PRICING = 'bulk_sauces';
 export const SIDES_MENU_SEED = {
     schemaVersion: 1,
     menuId: 'sides',
+    showSpanish: true,
     title: 'SIDES, SWEETS & DRINKS',
     titleEs: 'GUARNICIONES, POSTRES Y BEBIDAS',
     subtitle: '',

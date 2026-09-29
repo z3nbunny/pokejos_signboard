@@ -8,6 +8,7 @@
 export const MEAT_MENU_SEED = {
     schemaVersion: 2,
     menuId: 'meat',
+    showSpanish: true,
     title: 'MEATS',
     titleEs: 'CARNES',
     subtitle: 'TRUE TEXAS BBQ',

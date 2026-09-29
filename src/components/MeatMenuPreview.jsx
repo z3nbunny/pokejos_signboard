@@ -1,5 +1,9 @@
 import '@fontsource/rye/400.css';
 import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
+import {
+    createMenuDisplayModel,
+    shouldShowSpanish
+} from '../utils/menuLanguage';
 
 const DISPLAY_FONT_STYLE = {
     fontFamily: "'Rye', sans-serif"
@@ -199,7 +203,8 @@ const buildSectionColumns = (sections) => {
 function MenuItem({
     item,
     dense,
-    sectionId
+    sectionId,
+    showSpanish = true
 }) {
     const priceOptions = sortByOrder(
         item.priceOptions
@@ -222,7 +227,8 @@ function MenuItem({
         && priceOptions.length > 1;
 
     const shouldStackName = Boolean(
-        item.nameEs
+        showSpanish
+        && item.nameEs
         && (
             item.name.length
             + item.nameEs.length
@@ -239,18 +245,20 @@ function MenuItem({
                 }>
                     <span>{item.name}</span>
 
-                    <span className="whitespace-nowrap">
-                        <span
-                            aria-hidden="true"
-                            className="mr-[0.25cqw] text-white/50"
-                        >
-                            |
-                        </span>
+                    {showSpanish && (
+                        <span className="whitespace-nowrap">
+                            <span
+                                aria-hidden="true"
+                                className="mr-[0.25cqw] text-white/50"
+                            >
+                                |
+                            </span>
 
-                        <span lang="es">
-                            {item.nameEs || 'Pollo'}
+                            <span lang="es">
+                                {item.nameEs || 'Pollo'}
+                            </span>
                         </span>
-                    </span>
+                    )}
                 </h3>
 
                 <div className="shrink-0 flex items-baseline gap-[0.7cqw]">
@@ -301,7 +309,7 @@ function MenuItem({
                 >
                     <span>{item.name}</span>
 
-                    {item.nameEs && (
+                    {showSpanish && item.nameEs && (
                         <span
                             className={
                                 shouldStackName
@@ -614,7 +622,8 @@ function MenuModifierList({
 }
 
 function MenuSection({
-    section
+    section,
+    showSpanish = true
 }) {
     const visibleItems = sortByOrder(
         section.items
@@ -738,6 +747,9 @@ function MenuSection({
                                     sectionId={
                                         section.id
                                     }
+                                    showSpanish={
+                                        showSpanish
+                                    }
                                 />
 
                                 <MenuModifierList
@@ -774,7 +786,8 @@ function MenuSection({
 
 function PreviewSpotlight({
     menu,
-    spotlight
+    spotlight,
+    showSpanish = true
 }) {
     const superSpud =
         (menu?.sections || [])
@@ -958,22 +971,23 @@ function PreviewSpotlight({
                             {displayedSpotlight.label}
                         </p>
 
-                        {displayedSpotlight.labelEs && (
-                            <p
-                                lang="es"
-                                className={
-                                    'mt-[0.18cqw] font-extrabold '
-                                    + 'uppercase leading-none '
-                                    + (
-                                        usesTextOverlay
-                                            ? 'text-[clamp(10px,0.7cqw,26px)] tracking-[0.045em] text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.95)]'
-                                            : 'text-[clamp(9px,0.62cqw,23px)] tracking-[0.04em] text-black/75'
-                                    )
-                                }
-                            >
-                                {displayedSpotlight.labelEs}
-                            </p>
-                        )}
+                        {showSpanish
+                            && displayedSpotlight.labelEs && (
+                                <p
+                                    lang="es"
+                                    className={
+                                        'mt-[0.18cqw] font-extrabold '
+                                        + 'uppercase leading-none '
+                                        + (
+                                            usesTextOverlay
+                                                ? 'text-[clamp(10px,0.7cqw,26px)] tracking-[0.045em] text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.95)]'
+                                                : 'text-[clamp(9px,0.62cqw,23px)] tracking-[0.04em] text-black/75'
+                                        )
+                                    }
+                                >
+                                    {displayedSpotlight.labelEs}
+                                </p>
+                            )}
                     </header>
 
                     <div
@@ -1002,14 +1016,15 @@ function PreviewSpotlight({
                                 {displayedSpotlight.title}
                             </h3>
 
-                            {displayedSpotlight.titleEs && (
-                                <p
-                                    lang="es"
-                                    className="mt-[0.14cqw] text-[clamp(11px,0.82cqw,30px)] font-extrabold uppercase leading-none"
-                                >
-                                    {displayedSpotlight.titleEs}
-                                </p>
-                            )}
+                            {showSpanish
+                                && displayedSpotlight.titleEs && (
+                                    <p
+                                        lang="es"
+                                        className="mt-[0.14cqw] text-[clamp(11px,0.82cqw,30px)] font-extrabold uppercase leading-none"
+                                    >
+                                        {displayedSpotlight.titleEs}
+                                    </p>
+                                )}
 
                             {displayedSpotlight.description && (
                                 <p
@@ -1031,26 +1046,27 @@ function PreviewSpotlight({
                                 </p>
                             )}
 
-                            {displayedSpotlight.descriptionEs && (
-                                <p
-                                    lang="es"
-                                    className={
-                                        'mt-[0.2cqw] '
-                                        + 'text-[clamp(9px,0.62cqw,23px)] '
-                                        + 'font-semibold leading-[1.12] '
-                                        + (
-                                            usesTextOverlay
-                                                ? 'text-black/75 line-clamp-2'
-                                                : 'text-black/80'
-                                        )
-                                    }
-                                >
-                                    {
-                                        displayedSpotlight
-                                            .descriptionEs
-                                    }
-                                </p>
-                            )}
+                            {showSpanish
+                                && displayedSpotlight.descriptionEs && (
+                                    <p
+                                        lang="es"
+                                        className={
+                                            'mt-[0.2cqw] '
+                                            + 'text-[clamp(9px,0.62cqw,23px)] '
+                                            + 'font-semibold leading-[1.12] '
+                                            + (
+                                                usesTextOverlay
+                                                    ? 'text-black/75 line-clamp-2'
+                                                    : 'text-black/80'
+                                            )
+                                        }
+                                    >
+                                        {
+                                            displayedSpotlight
+                                                .descriptionEs
+                                        }
+                                    </p>
+                                )}
                         </div>
 
                         {Number.isFinite(
@@ -1084,7 +1100,10 @@ function PreviewSpotlight({
     );
 }
 
-function MenuNotices({ menu }) {
+function MenuNotices({
+    menu,
+    showSpanish = true
+}) {
     const notices = {
         ...DEFAULT_DISPLAY_NOTICES,
         ...(menu?.displayNotices || {})
@@ -1103,16 +1122,21 @@ function MenuNotices({ menu }) {
                 {notices.glutenDisclaimer}
             </p>
 
-            <span
-                aria-hidden="true"
-                className="shrink-0 text-white/45"
-            >
-                |
-            </span>
+            {showSpanish
+                && notices.glutenDisclaimerEs && (
+                    <>
+                        <span
+                            aria-hidden="true"
+                            className="shrink-0 text-white/45"
+                        >
+                            |
+                        </span>
 
-            <p lang="es">
-                {notices.glutenDisclaimerEs}
-            </p>
+                        <p lang="es">
+                            {notices.glutenDisclaimerEs}
+                        </p>
+                    </>
+                )}
         </footer>
     );
 }
@@ -1121,8 +1145,14 @@ export default function MeatMenuPreview({
     menu,
     spotlight = null
 }) {
+    const showSpanish =
+        shouldShowSpanish(menu);
+
+    const displayMenu =
+        createMenuDisplayModel(menu);
+
     const columns = buildSectionColumns(
-        menu?.sections || []
+        displayMenu?.sections || []
     );
 
     const visibleSectionCount =
@@ -1157,14 +1187,18 @@ export default function MeatMenuPreview({
                                             section={
                                                 section
                                             }
+                                            showSpanish={
+                                                showSpanish
+                                            }
                                         />
                                     )
                                 )}
 
                                 {columnIndex === 0 && (
                                     <PreviewSpotlight
-                                        menu={menu}
+                                        menu={displayMenu}
                                         spotlight={spotlight}
+                                        showSpanish={showSpanish}
                                     />
                                 )}
                             </div>
@@ -1179,7 +1213,10 @@ export default function MeatMenuPreview({
                     </main>
                 )}
 
-                <MenuNotices menu={menu} />
+                <MenuNotices
+                    menu={displayMenu}
+                    showSpanish={showSpanish}
+                />
             </div>
         </div>
     );
