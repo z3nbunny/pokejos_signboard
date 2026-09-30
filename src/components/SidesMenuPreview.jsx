@@ -1,19 +1,31 @@
-import '@fontsource/rye/400.css';
-import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
-
 import FountainFlavorGrid from './FountainFlavorGrid';
 import {
     createMenuDisplayModel,
     shouldShowSpanish
 } from '../utils/menuLanguage';
 
-const DISPLAY_FONT_STYLE = {
-    fontFamily: 'Rye, serif'
-};
+import {
+    BODY_FONT_STYLE,
+    DISPLAY_FONT_STYLE,
+    MENU_TEXT_CLASSES
+} from '../styles/menuTypography';
 
-const BODY_FONT_STYLE = {
-    fontFamily:
-        'Atkinson Hyperlegible Next Variable, sans-serif'
+const SIDES_TEXT_CLASSES = {
+    itemName:
+        MENU_TEXT_CLASSES.itemName
+        + ' leading-[1.04]',
+
+    price:
+        MENU_TEXT_CLASSES.price
+        + ' leading-none',
+
+    supporting:
+        MENU_TEXT_CLASSES.supporting
+        + ' leading-[1.14]',
+
+    detail:
+        MENU_TEXT_CLASSES.detail
+        + ' leading-[1.14]'
 };
 
 const COLUMN_SECTIONS = [
@@ -170,7 +182,12 @@ function BilingualDescription({
 
     if (inline) {
         return (
-            <p className="mt-[0.16cqw] text-[0.68cqw] leading-[1.14] text-white/82">
+            <p
+                className={
+                    'mt-[0.16cqw] '
+                    + SIDES_TEXT_CLASSES.supporting
+                }
+            >
                 {description}
 
                 {description && descriptionEs && (
@@ -180,24 +197,25 @@ function BilingualDescription({
                 )}
 
                 {descriptionEs && (
-                    <span className="text-white/62">
-                        {descriptionEs}
-                    </span>
+                    <span>{descriptionEs}</span>
                 )}
             </p>
         );
     }
 
     return (
-        <div className="mt-[0.16cqw] text-[0.68cqw] leading-[1.14] text-white/82">
+        <div
+            className={
+                'mt-[0.16cqw] '
+                + SIDES_TEXT_CLASSES.supporting
+            }
+        >
             {description && (
                 <p>{description}</p>
             )}
 
             {descriptionEs && (
-                <p className="text-white/62">
-                    {descriptionEs}
-                </p>
+                <p>{descriptionEs}</p>
             )}
         </div>
     );
@@ -229,7 +247,12 @@ function ItemDetails({
         );
 
         return (
-            <div className="mt-[0.16cqw] text-[0.62cqw] leading-[1.14] text-white/70">
+            <div
+                className={
+                    'mt-[0.16cqw] '
+                    + SIDES_TEXT_CLASSES.detail
+                }
+            >
                 {Array.from(
                     { length: detailCount },
                     (_, index) => {
@@ -252,9 +275,7 @@ function ItemDetails({
                                 )}
 
                                 {detailEs && (
-                                    <span className="text-white/52">
-                                        {detailEs}
-                                    </span>
+                                    <span>{detailEs}</span>
                                 )}
                             </p>
                         );
@@ -265,16 +286,18 @@ function ItemDetails({
     }
 
     return (
-        <div className="mt-[0.16cqw] text-[0.62cqw] leading-[1.14] text-white/70">
+        <div
+            className={
+                'mt-[0.16cqw] '
+                + SIDES_TEXT_CLASSES.detail
+            }
+        >
             {details.map((detail) => (
                 <p key={detail}>{detail}</p>
             ))}
 
             {detailsEs.map((detail) => (
-                <p
-                    key={detail}
-                    className="text-white/52"
-                >
+                <p key={detail}>
                     {detail}
                 </p>
             ))}
@@ -301,7 +324,7 @@ function MenuItem({ item }) {
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-[0.55cqw]">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-[0.28cqw] gap-y-[0.12cqw]">
-                        <h3 className="text-[1.02cqw] leading-[1.04] font-[850] uppercase text-white">
+                        <h3 className={SIDES_TEXT_CLASSES.itemName}>
                             {item.name}
 
                             {item.nameEs && (
@@ -349,7 +372,7 @@ function MenuItem({ item }) {
                                             </span>
                                         )}
 
-                                    <span className="text-[1.02cqw] font-black text-[#f4c542]">
+                                    <span className={SIDES_TEXT_CLASSES.price}>
                                         {formatPrice(
                                             priceOption.priceCents
                                         )}

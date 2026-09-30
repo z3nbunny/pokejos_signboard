@@ -1,72 +1,53 @@
-import '@fontsource/rye/400.css';
-import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 import {
     createMenuDisplayModel,
     shouldShowSpanish
 } from '../utils/menuLanguage';
+import {
+    BODY_FONT_STYLE,
+    DISPLAY_FONT_STYLE,
+    MENU_TEXT_CLASSES
+} from '../styles/menuTypography';
 
-const DISPLAY_FONT_STYLE = {
-    fontFamily: "'Rye', sans-serif"
-};
-
-const BODY_FONT_STYLE = {
-    fontFamily:
-        "'Atkinson Hyperlegible Next Variable', sans-serif"
-};
-
-const MENU_TYPE_CLASSES = {
+const MEAT_TEXT_CLASSES = {
     sectionTitle:
-        'text-[clamp(18px,1.28cqw,48px)] '
-        + 'font-normal uppercase '
-        + 'tracking-[0.035em] leading-[1.05] '
-        + 'text-[#f4c542]',
+        MENU_TEXT_CLASSES.sectionTitle
+        + ' leading-[1.05]',
 
     sectionSubtitle:
-        'whitespace-pre-line '
-        + 'text-[clamp(11px,0.7cqw,26px)] '
-        + 'font-semibold tracking-[0.02em] '
-        + 'leading-[1.2]',
+        MENU_TEXT_CLASSES.sectionSubtitle
+        + ' whitespace-pre-line leading-[1.2]',
 
     itemName:
-        'text-[clamp(13px,1.04cqw,39px)] '
-        + 'font-bold uppercase '
-        + 'tracking-[0.005em] leading-[1.08]',
+        MENU_TEXT_CLASSES.itemName
+        + ' leading-[1.08]',
 
     price:
-        'text-[clamp(13px,1.04cqw,39px)] '
-        + 'font-extrabold text-[#f4c542] '
-        + 'tabular-nums leading-none',
+        MENU_TEXT_CLASSES.price
+        + ' leading-none',
 
     supporting:
-        'text-[clamp(11px,0.78cqw,29px)] '
-        + 'font-medium leading-[1.22] '
-        + 'text-white/95',
+        MENU_TEXT_CLASSES.supporting
+        + ' leading-[1.22]',
 
     detail:
-        'text-[clamp(11px,0.76cqw,28px)] '
-        + 'font-medium leading-[1.2] '
-        + 'text-white/95',
+        MENU_TEXT_CLASSES.detail
+        + ' leading-[1.2]',
 
     optionLabel:
-        'text-[clamp(10px,0.7cqw,26px)] '
-        + 'font-semibold tracking-[0.015em] '
-        + 'leading-[1.15] text-white/90',
+        MENU_TEXT_CLASSES.optionLabel
+        + ' leading-[1.15]',
 
     modifierLabel:
-        'text-[clamp(11px,0.84cqw,31px)] '
-        + 'font-bold uppercase '
-        + 'tracking-[0.01em] leading-[1.1] '
-        + 'text-[#f4c542]',
+        MENU_TEXT_CLASSES.modifierLabel
+        + ' leading-[1.1]',
 
     modifierDescription:
-        'text-[clamp(11px,0.76cqw,28px)] '
-        + 'font-medium leading-[1.2] '
-        + 'text-white/95',
+        MENU_TEXT_CLASSES.modifierDescription
+        + ' leading-[1.2]',
 
     disclosure:
-        'text-[clamp(10px,0.66cqw,24px)] '
-        + 'font-medium leading-[1.2] '
-        + 'text-white/85'
+        MENU_TEXT_CLASSES.disclosure
+        + ' leading-[1.2]'
 };
 
 const DEFAULT_DISPLAY_NOTICES = {
@@ -239,7 +220,7 @@ function MenuItem({
         return (
             <article className="flex items-baseline justify-between gap-[0.7cqw]">
                 <h3 className={
-                    MENU_TYPE_CLASSES.itemName
+                    MEAT_TEXT_CLASSES.itemName
                     + ' min-w-0 flex flex-wrap '
                     + 'items-baseline gap-x-[0.25cqw]'
                 }>
@@ -298,8 +279,9 @@ function MenuItem({
             <div className="flex items-baseline justify-between gap-[0.65cqw]">
                 <h3
                     className={
-                        'min-w-0 text-[clamp(13px,1.08cqw,40px)] '
-                        + 'font-extrabold uppercase tracking-[-0.01em] '
+                        'min-w-0 '
+                        + MENU_TEXT_CLASSES.itemName
+                        + ' '
                         + (
                             shouldStackName
                                 ? 'flex flex-col items-start gap-y-[0.08cqw] leading-[1.02]'
@@ -341,12 +323,12 @@ function MenuItem({
                         {singlePrice.label
                             && sectionId
                             !== 'meat_by_pound' && (
-                                <span className={MENU_TYPE_CLASSES.optionLabel}>
+                                <span className={MEAT_TEXT_CLASSES.optionLabel}>
                                     {singlePrice.label}
                                 </span>
                             )}
 
-                        <span className={MENU_TYPE_CLASSES.price}>
+                        <span className={MEAT_TEXT_CLASSES.price}>
                             {formatPrice(
                                 singlePrice.priceCents
                             )}
@@ -356,7 +338,7 @@ function MenuItem({
             </div>
 
             {displayedDescription && (
-                <p className={MENU_TYPE_CLASSES.supporting}>
+                <p className={MEAT_TEXT_CLASSES.supporting}>
                     {displayedDescription}
                 </p>
             )}
@@ -377,7 +359,7 @@ function MenuItem({
                                     + detailIndex
                                 }
                                 className={
-                                    MENU_TYPE_CLASSES.detail
+                                    MEAT_TEXT_CLASSES.detail
                                     + ' flex gap-[0.32cqw]'
                                 }
                             >
@@ -403,13 +385,13 @@ function MenuItem({
                                 key={priceOption.id}
                                 className="flex items-baseline justify-between gap-[0.5cqw]"
                             >
-                                <span className={MENU_TYPE_CLASSES.optionLabel}>
+                                <span className={MEAT_TEXT_CLASSES.optionLabel}>
                                     {getDisplayedPriceLabel(
                                         priceOption
                                     )}
                                 </span>
 
-                                <span className={MENU_TYPE_CLASSES.price}>
+                                <span className={MEAT_TEXT_CLASSES.price}>
                                     {formatPrice(
                                         priceOption
                                             .priceCents
@@ -452,7 +434,7 @@ function SectionHeading({
             <h2
                 style={DISPLAY_FONT_STYLE}
                 className={
-                    MENU_TYPE_CLASSES.sectionTitle
+                    MEAT_TEXT_CLASSES.sectionTitle
                     + (
                         shouldStackTitle
                             ? ' flex flex-col items-center gap-y-[0.12cqw]'
@@ -490,14 +472,7 @@ function SectionHeading({
                                     ? 'es'
                                     : undefined
                             }
-                            className={
-                                MENU_TYPE_CLASSES.sectionSubtitle
-                                + (
-                                    index === 0
-                                        ? ' text-white/95'
-                                        : ' text-white/90'
-                                )
-                            }
+                            className={MEAT_TEXT_CLASSES.sectionSubtitle}
                         >
                             {note}
                         </p>
@@ -537,7 +512,7 @@ function MenuModifier({
     return (
         <div className="flex items-baseline justify-between gap-[0.5cqw]">
             <div className="min-w-0">
-                <p className={MENU_TYPE_CLASSES.modifierLabel}>
+                <p className={MEAT_TEXT_CLASSES.modifierLabel}>
                     <span>{label}</span>
 
                     {labelEs && (
@@ -559,7 +534,7 @@ function MenuModifier({
                 {description && (
                     <p
                         className={
-                            MENU_TYPE_CLASSES
+                            MEAT_TEXT_CLASSES
                                 .modifierDescription
                         }
                     >
@@ -571,7 +546,7 @@ function MenuModifier({
                     <p
                         lang="es"
                         className={
-                            MENU_TYPE_CLASSES
+                            MEAT_TEXT_CLASSES
                                 .modifierDescription
                             + ' mt-[0.08cqw]'
                         }
@@ -584,7 +559,7 @@ function MenuModifier({
             {hasPrice && (
                 <span
                     className={
-                        MENU_TYPE_CLASSES.price
+                        MEAT_TEXT_CLASSES.price
                         + ' shrink-0'
                     }
                 >
@@ -767,7 +742,7 @@ function MenuSection({
                     })}
                 </div>
             ) : (
-                <p className={MENU_TYPE_CLASSES.supporting}>
+                <p className={MEAT_TEXT_CLASSES.supporting}>
                     No items currently available.
                 </p>
             )}
@@ -1112,7 +1087,7 @@ function MenuNotices({
     return (
         <footer
             className={
-                MENU_TYPE_CLASSES.disclosure
+                MEAT_TEXT_CLASSES.disclosure
                 + ' shrink-0 flex items-center '
                 + 'justify-center gap-[0.45cqw] '
                 + 'pt-[0.32cqw] text-center'
