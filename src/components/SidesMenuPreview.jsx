@@ -36,8 +36,8 @@ const COLUMN_SECTIONS = [
 
 const COLUMN_GAP_CLASSES = [
     'gap-[1.6cqw]',
-    'gap-[3.6cqw]',
-    'gap-[4.2cqw]'
+    'gap-[1.6cqw]',
+    'gap-[1.8cqw]'
 ];
 
 const SECTION_ITEM_SPACING_CLASSES = {

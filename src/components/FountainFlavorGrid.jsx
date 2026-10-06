@@ -16,8 +16,8 @@ function BrandTile({ brand, variant }) {
                 overflow-hidden
                 rounded-[0.28cqw]
                 border
-                border-[#f4c542]/30
-                bg-white
+                border-transparent
+                bg-transparent
                 px-[0.22cqw]
                 py-[0.14cqw]
                 ${isBadge
@@ -39,7 +39,13 @@ function BrandTile({ brand, variant }) {
                     }
                 `}
                 style={{
-                    transform: `scale(${brand.scale || 1})`
+                    transform: `scale(${brand.scale || 1})`,
+                    filter:
+                        brand.monochromeFilter
+                        || 'brightness(0) invert(1)',
+                    mixBlendMode:
+                        brand.monochromeBlendMode
+                        || 'normal'
                 }}
             />
         </div>
@@ -121,7 +127,7 @@ function FountainFlavorGrid({
                         grid
                         grid-cols-4
                         gap-[0.3cqw]
-                        px-[1.3cqw]]
+                        px-[1.3cqw]
                         ${badgeBrands.length > 0
                             ? 'mt-[0.28cqw]'
                             : ''

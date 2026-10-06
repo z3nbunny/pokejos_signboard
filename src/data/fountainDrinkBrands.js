@@ -29,7 +29,10 @@ export const FOUNTAIN_DRINK_BRANDS = {
         name: "Barq's Root Beer",
         logo: barqsLogo,
         scale: 1.25,
-        tileVariant: 'badge'
+        tileVariant: 'badge',
+        monochromeFilter:
+            'grayscale(1) invert(1) contrast(250%)',
+        monochromeBlendMode: 'screen'
     },
 
     red_flash: {
@@ -37,7 +40,10 @@ export const FOUNTAIN_DRINK_BRANDS = {
         name: 'Red Flash',
         logo: redFlashLogo,
         scale: 1.55,
-        tileVariant: 'badge'
+        tileVariant: 'badge',
+        monochromeFilter:
+            'grayscale(1) contrast(300%)',
+        monochromeBlendMode: 'screen'
     },
 
     powerade: {
