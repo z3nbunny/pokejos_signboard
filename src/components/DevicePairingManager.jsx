@@ -109,10 +109,19 @@ export default function DevicePairingManager() {
                     existingData.authUid
                     && existingData.authUid !== request.authUid
                 ) {
-                    throw new Error(
-                        'That device name is already paired '
-                        + 'to a different TV.'
+                    const replaceConfirmed = window.confirm(
+                        `${request.locationId} / ${request.deviceId} `
+                        + 'is already paired to another TV.\n\n'
+                        + `Replace that pairing with TV ${request.pairingCode}?\n\n`
+                        + 'Continue only if you are replacing or re-registering '
+                        + 'this location’s existing TV.\n\n'
+                        + 'Existing device settings will be preserved. '
+                        + 'The previous pairing will be disconnected.'
                     );
+
+                    if (!replaceConfirmed) {
+                        return;
+                    }
                 }
             }
 
