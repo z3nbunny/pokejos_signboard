@@ -114,7 +114,7 @@ export default function DevicePairingManager() {
                         + 'is already paired to another TV.\n\n'
                         + `Replace that pairing with TV ${request.pairingCode}?\n\n`
                         + 'Continue only if you are replacing or re-registering '
-                        + 'this location’s existing TV.\n\n'
+                        + 'the existing TV at this location.\n\n'
                         + 'Existing device settings will be preserved. '
                         + 'The previous pairing will be disconnected.'
                     );
