@@ -214,23 +214,23 @@ service cloud.firestore {
         return isSignedIn()
           && isSupportedMenu(menuId)
           && request.resource.data.keys().hasOnly([
-            'soldOutItemIds',
+            'soldOutItems',
             'updatedAt',
             'updatedBy'
           ])
           && request.resource.data.keys().hasAll([
-            'soldOutItemIds',
+            'soldOutItems',
             'updatedAt',
             'updatedBy'
           ])
-          && request.resource.data.soldOutItemIds is list
-          && request.resource.data.soldOutItemIds.size() <= 200
+          && request.resource.data.soldOutItems is map
+          && request.resource.data.soldOutItems.size() <= 200
           && request.resource.data.updatedAt == request.time
           && request.resource.data.updatedBy
             == request.auth.uid;
       }
 
-      // Displays need the sold-out list for their location.
+      // Displays need availability for their location.
       allow read: if isSupportedMenu(menuId);
 
       // Super admins may manage every restaurant.
@@ -239,8 +239,8 @@ service cloud.firestore {
         if canManageLocation(locationId)
         && isValidAvailabilityWrite();
 
-      // Clearing the list should be an update to an empty
-      // array. Only super admins may delete the document.
+      // Clearing availability should update soldOutItems
+      // to an empty map instead of deleting the document.
       allow delete: if isSuperAdmin()
         && isSupportedMenu(menuId);
     }

@@ -10,6 +10,14 @@ import {
     MENU_TEXT_CLASSES
 } from '../styles/menuTypography';
 
+import {
+    getMenuOptionAvailabilityId,
+    isItemSoldOut,
+    isMenuItemSoldOut
+} from '../services/menuAvailability';
+
+import MenuSoldOutLabel from './MenuSoldOutLabel';
+
 const SIDES_TEXT_CLASSES = {
     itemName:
         MENU_TEXT_CLASSES.itemName
@@ -305,7 +313,57 @@ function ItemDetails({
     );
 }
 
-function MenuItem({ item }) {
+const getItemDescriptions = (item) => {
+    const options =
+        item.availabilityOptionsDisplay === 'brand_list'
+            && Array.isArray(item.availabilityOptions)
+            ? item.availabilityOptions.filter(
+                (option) =>
+                    String(option.name || '').trim()
+            )
+            : [];
+
+    if (options.length === 0) {
+        return {
+            description: item.description || '',
+            descriptionEs: item.descriptionEs || ''
+        };
+    }
+
+    const description = options
+        .map((option) =>
+            String(option.name || '').trim()
+        )
+        .join(', ');
+
+    const translatedDescription = options
+        .map((option) =>
+            String(option.nameEs || '').trim()
+            || String(option.name || '').trim()
+        )
+        .join(', ');
+
+    return {
+        description,
+        descriptionEs:
+            translatedDescription === description
+                ? ''
+                : translatedDescription
+    };
+};
+
+function MenuItem({
+    item,
+    soldOutItems = {},
+    currentTime = null,
+    showSpanish = true
+}) {
+    const soldOut = isMenuItemSoldOut(
+        soldOutItems,
+        item,
+        currentTime
+    );
+    const descriptions = getItemDescriptions(item);
     const visiblePrices = item.pricingGroupId
         ? []
         : (
@@ -324,7 +382,12 @@ function MenuItem({ item }) {
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-[0.55cqw]">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-[0.28cqw] gap-y-[0.12cqw]">
-                        <h3 className={SIDES_TEXT_CLASSES.itemName}>
+                        <h3
+                            className={`${SIDES_TEXT_CLASSES.itemName} ${soldOut
+                                ? 'line-through opacity-60'
+                                : ''
+                                }`}
+                        >
                             {item.name}
 
                             {item.nameEs && (
@@ -340,21 +403,28 @@ function MenuItem({ item }) {
                             )}
                         </h3>
 
+                        {soldOut && (
+                            <MenuSoldOutLabel
+                                showSpanish={showSpanish}
+                            />
+                        )}
+
                         <DietaryBadges
                             flags={item.dietaryFlags}
                         />
                     </div>
+                    <div className={soldOut ? 'opacity-60' : ''}>
+                        <BilingualDescription
+                            description={descriptions.description}
+                            descriptionEs={descriptions.descriptionEs}
+                            inline={inlineTranslations}
+                        />
 
-                    <BilingualDescription
-                        description={item.description}
-                        descriptionEs={item.descriptionEs}
-                        inline={inlineTranslations}
-                    />
-
-                    <ItemDetails
-                        item={item}
-                        inline={inlineTranslations}
-                    />
+                        <ItemDetails
+                            item={item}
+                            inline={inlineTranslations}
+                        />
+                    </div>
                 </div>
 
                 {visiblePrices.length > 0 && (
@@ -372,7 +442,12 @@ function MenuItem({ item }) {
                                             </span>
                                         )}
 
-                                    <span className={SIDES_TEXT_CLASSES.price}>
+                                    <span
+                                        className={`${SIDES_TEXT_CLASSES.price} ${soldOut
+                                            ? 'line-through opacity-60'
+                                            : ''
+                                            }`}
+                                    >
                                         {formatPrice(
                                             priceOption.priceCents
                                         )}
@@ -388,46 +463,77 @@ function MenuItem({ item }) {
 }
 function CompactBeerGroup({
     items = [],
-    showSpanish = true
+    showSpanish = true,
+    soldOutItems = {},
+    currentTime = null
 }) {
     const visibleItems = items
         .map((item) => {
-            const priceOption = (
-                item.priceOptions || []
-            ).find(
-                (option) =>
-                    option.enabled !== false
-            );
+            const priceOption = (item.priceOptions || [])
+                .find(
+                    (option) => option.enabled !== false
+                );
 
             if (!priceOption) {
                 return null;
             }
 
-            const label = String(
-                item.name || ''
-            )
+            const label = String(item.name || '')
                 .replace(/\s+beer$/i, '')
                 .trim();
 
-            const labelEs = String(
-                item.nameEs || ''
-            )
+            const labelEs = String(item.nameEs || '')
                 .replace(/^cerveza\s+/i, '')
                 .trim();
+
+            const options =
+                item.availabilityOptionsDisplay === 'brand_list'
+                    && Array.isArray(item.availabilityOptions)
+                    ? item.availabilityOptions.filter(
+                        (option) =>
+                            option.id
+                            && String(option.name || '').trim()
+                    )
+                    : [];
+
+            const details = Array.isArray(item.details)
+                ? item.details.filter(Boolean)
+                : [];
+
+            const soldOut = isMenuItemSoldOut(
+                soldOutItems,
+                item,
+                currentTime
+            );
 
             return {
                 id: item.id,
                 label: label || item.name,
                 labelEs: labelEs || item.nameEs,
                 priceCents: priceOption.priceCents,
+                soldOut,
+                brandOptions: options.map((option) => ({
+                    id: option.id,
+                    name: option.name,
+                    soldOut:
+                        soldOut
+                        || (
+                            Number.isFinite(currentTime)
+                            && isItemSoldOut(
+                                soldOutItems,
+                                getMenuOptionAvailabilityId(
+                                    item.id,
+                                    option.id
+                                ),
+                                currentTime
+                            )
+                        )
+                })),
+                detailsText: details.join(' · '),
                 brandText: [
-                    item.description,
-                    ...(Array.isArray(item.details)
-                        ? item.details
-                        : [])
-                ]
-                    .filter(Boolean)
-                    .join(' · ')
+                    getItemDescriptions(item).description,
+                    ...details
+                ].filter(Boolean).join(' · ')
             };
         })
         .filter(Boolean);
@@ -440,15 +546,7 @@ function CompactBeerGroup({
         <section className="border-t border-[#f4c542]/32 pt-[0.5cqw]">
             <h3
                 style={DISPLAY_FONT_STYLE}
-                className="
-                    mb-[0.62cqw]
-                    text-center
-                    text-[1.55cqw]
-                    leading-[1.02]
-                    uppercase
-                    tracking-[0.025em]
-                    text-[#f4c542]
-                "
+                className="mb-[0.62cqw] text-center text-[1.55cqw] leading-[1.02] uppercase tracking-[0.025em] text-[#f4c542]"
             >
                 BEERS
 
@@ -457,7 +555,6 @@ function CompactBeerGroup({
                         <span className="mx-[0.42cqw] text-white/42">
                             |
                         </span>
-
                         CERVEZAS
                     </>
                 )}
@@ -465,32 +562,86 @@ function CompactBeerGroup({
 
             <div className="space-y-[0.72cqw]">
                 {visibleItems.map((item) => (
-                    <div
-                        key={item.id}
-                        className="min-w-0"
-                    >
+                    <div key={item.id} className="min-w-0">
                         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-[0.7cqw]">
-                            <span className="text-[1.02cqw] leading-none font-black uppercase text-white">
-                                {item.label}
+                            <div className="flex flex-wrap items-center gap-[0.2cqw]">
+                                <span
+                                    className={`text-[1.02cqw] leading-none font-black uppercase text-white ${item.soldOut
+                                        ? 'line-through opacity-60'
+                                        : ''
+                                        }`}
+                                >
+                                    {item.label}
+                                    {item.label && item.labelEs
+                                        ? ' | '
+                                        : ''}
+                                    {item.labelEs}
+                                </span>
 
-                                {item.label && item.labelEs
-                                    ? ' | '
-                                    : ''}
-
-                                {item.labelEs}
-                            </span>
-
-                            <span className="text-[1.02cqw] leading-none font-black text-[#f4c542]">
-                                {formatPrice(
-                                    item.priceCents
+                                {item.soldOut && (
+                                    <MenuSoldOutLabel
+                                        showSpanish={showSpanish}
+                                    />
                                 )}
+                            </div>
+
+                            <span
+                                className={`text-[1.02cqw] leading-none font-black text-[#f4c542] ${item.soldOut
+                                    ? 'line-through opacity-60'
+                                    : ''
+                                    }`}
+                            >
+                                {formatPrice(item.priceCents)}
                             </span>
                         </div>
 
-                        {item.brandText && (
+                        {item.brandOptions.length > 0 ? (
                             <p className="mt-[0.24cqw] text-[0.62cqw] leading-[1.18] font-semibold text-white/68">
-                                {item.brandText}
+                                {item.brandOptions.map(
+                                    (option, index) => (
+                                        <span key={option.id}>
+                                            <span
+                                                className={
+                                                    option.soldOut
+                                                        ? 'line-through opacity-60'
+                                                        : ''
+                                                }
+                                            >
+                                                {option.name}
+                                            </span>
+
+                                            {option.soldOut
+                                                && !item.soldOut && (
+                                                    <>
+                                                        {' '}
+                                                        <MenuSoldOutLabel
+                                                            showSpanish={
+                                                                showSpanish
+                                                            }
+                                                        />
+                                                    </>
+                                                )}
+
+                                            {index < item.brandOptions.length - 1
+                                                ? ', '
+                                                : ''}
+                                        </span>
+                                    )
+                                )}
+
+                                {item.detailsText && (
+                                    <> · {item.detailsText}</>
+                                )}
                             </p>
+                        ) : (
+                            item.brandText && (
+                                <p
+                                    className={`mt-[0.24cqw] text-[0.62cqw] leading-[1.18] font-semibold text-white/68 ${item.soldOut ? 'opacity-60' : ''
+                                        }`}
+                                >
+                                    {item.brandText}
+                                </p>
+                            )
                         )}
                     </div>
                 ))}
@@ -716,6 +867,8 @@ function MenuSection({
     section,
     menu,
     showSpanish = true,
+    soldOutItems = {},
+    currentTime = null,
     beforeItemsContent = null,
     afterItemId = '',
     afterItemContent = null
@@ -861,6 +1014,8 @@ function MenuSection({
                                 <CompactBeerGroup
                                     items={beerItems}
                                     showSpanish={showSpanish}
+                                    soldOutItems={soldOutItems}
+                                    currentTime={currentTime}
                                 />
 
                                 {beerItems.flatMap(
@@ -885,7 +1040,12 @@ function MenuSection({
                             key={item.id}
                             className="space-y-[0.52cqw]"
                         >
-                            <MenuItem item={item} />
+                            <MenuItem
+                                item={item}
+                                showSpanish={showSpanish}
+                                soldOutItems={soldOutItems}
+                                currentTime={currentTime}
+                            />
 
                             {modifiersAfterItem(item.id)
                                 .map((modifier) => (
@@ -980,7 +1140,110 @@ function AllergenNotice({ menu }) {
     );
 }
 
-export default function SidesMenuPreview({ menu }) {
+function DrinkAvailabilityPanel({
+    menu,
+    fountainFlavorSettings,
+    soldOutItems,
+    currentTime,
+    showSpanish
+}) {
+    const fountainItem = (menu?.sections || [])
+        .flatMap((section) => section.items || [])
+        .find(
+            (item) =>
+                item.id === 'fountain_drinks_and_tea'
+                && item.enabled !== false
+        );
+
+    const options =
+        Array.isArray(fountainItem?.availabilityOptions)
+            ? fountainItem.availabilityOptions
+            : [];
+
+    const unavailableOptions =
+        Number.isFinite(currentTime)
+            ? options.filter((option) =>
+                option.id
+                && (
+                    isItemSoldOut(
+                        soldOutItems,
+                        fountainItem.id,
+                        currentTime
+                    )
+                    || isItemSoldOut(
+                        soldOutItems,
+                        `option:${fountainItem.id}:${option.id}`,
+                        currentTime
+                    )
+                )
+            )
+            : [];
+
+    const soldOutBrandIds = unavailableOptions
+        .map((option) => option.drinkSourceId)
+        .filter(Boolean);
+
+    const unavailableTeas = unavailableOptions.filter(
+        (option) =>
+            option.drinkSourceId === 'sweet_tea'
+            || option.drinkSourceId === 'unsweet_tea'
+    );
+
+    return (
+        <>
+            <FountainFlavorGrid
+                enabled={
+                    fountainFlavorSettings.enabled !== false
+                }
+                showTitle
+                showSpanish={showSpanish}
+                title="SODA FLAVORS"
+                titleEs={
+                    showSpanish
+                        ? 'SABORES DE REFRESCOS'
+                        : ''
+                }
+                brandIds={
+                    Array.isArray(fountainFlavorSettings.brandIds)
+                        && fountainFlavorSettings.brandIds.length > 0
+                        ? fountainFlavorSettings.brandIds
+                        : undefined
+                }
+                soldOutBrandIds={soldOutBrandIds}
+            />
+
+            {unavailableTeas.length > 0 && (
+                <div className="mb-[0.3cqw] space-y-[0.12cqw] text-center">
+                    {unavailableTeas.map((option) => (
+                        <p
+                            key={option.id}
+                            className={SIDES_TEXT_CLASSES.detail}
+                        >
+                            <span className="line-through opacity-60">
+                                {option.name}
+
+                                {showSpanish && option.nameEs && (
+                                    <> | {option.nameEs}</>
+                                )}
+                            </span>
+
+                            <span className="ml-[0.3cqw] font-bold text-[#f4c542]">
+                                SOLD OUT
+                                {showSpanish && ' · AGOTADO'}
+                            </span>
+                        </p>
+                    ))}
+                </div>
+            )}
+        </>
+    );
+}
+
+export default function SidesMenuPreview({
+    menu,
+    soldOutItems = {},
+    currentTime = null
+}) {
     const showSpanish =
         shouldShowSpanish(menu);
 
@@ -1045,6 +1308,8 @@ export default function SidesMenuPreview({ menu }) {
                                         key={section.id}
                                         section={section}
                                         menu={displayMenu}
+                                        soldOutItems={soldOutItems}
+                                        currentTime={currentTime}
                                         showSpanish={showSpanish}
                                         afterItemId={
                                             section.id === 'drinks'
@@ -1054,31 +1319,14 @@ export default function SidesMenuPreview({ menu }) {
                                         afterItemContent={
                                             section.id === 'drinks'
                                                 ? (
-                                                    <FountainFlavorGrid
-                                                        enabled={
+                                                    <DrinkAvailabilityPanel
+                                                        menu={menu}
+                                                        fountainFlavorSettings={
                                                             fountainFlavorSettings
-                                                                .enabled
-                                                            !== false
                                                         }
-                                                        showTitle
-                                                        title="SODA FLAVORS"
-                                                        titleEs={
-                                                            showSpanish
-                                                                ? 'SABORES DE REFRESCOS'
-                                                                : ''
-                                                        }
-                                                        brandIds={
-                                                            Array.isArray(
-                                                                fountainFlavorSettings
-                                                                    .brandIds
-                                                            )
-                                                                && fountainFlavorSettings
-                                                                    .brandIds
-                                                                    .length > 0
-                                                                ? fountainFlavorSettings
-                                                                    .brandIds
-                                                                : undefined
-                                                        }
+                                                        soldOutItems={soldOutItems}
+                                                        currentTime={currentTime}
+                                                        showSpanish={showSpanish}
                                                     />
                                                 )
                                                 : null

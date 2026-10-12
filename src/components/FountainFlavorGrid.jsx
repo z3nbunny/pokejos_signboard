@@ -3,51 +3,113 @@ import {
     getFountainDrinkBrands
 } from '../data/fountainDrinkBrands';
 
-function BrandTile({ brand, variant }) {
+function BrandTile({
+    brand,
+    variant,
+    soldOut = false,
+    showSpanish = true
+}) {
     const isBadge = variant === 'badge';
+
+    const soldOutLabel = soldOut && (
+        <span className="block w-full bg-[#0d0d0c]/95 px-[0.08cqw] py-[0.03cqw] text-center text-[0.4cqw] font-black uppercase leading-tight text-[#f4c542] whitespace-nowrap">
+            SOLD OUT
+            {showSpanish && ' · AGOTADO'}
+        </span>
+    );
 
     return (
         <div
             className={`
+                relative
                 flex
                 min-w-0
                 items-center
                 justify-center
-                overflow-hidden
                 rounded-[0.28cqw]
-                border
-                border-transparent
                 bg-transparent
                 px-[0.22cqw]
-                py-[0.14cqw]
                 ${isBadge
-                    ? 'h-[3cqw] w-[3.75cqw] justify-self-center'
-                    : 'h-[1.55cqw]'
+                    ? 'h-[3cqw] w-[3.75cqw] justify-self-center overflow-hidden border border-transparent py-[0.14cqw]'
+                    : 'h-[1.55cqw] flex-col overflow-visible border-0 py-0'
                 }
             `}
-            title={brand.name}
+            title={
+                soldOut
+                    ? `${brand.name}: Sold Out`
+                    : brand.name
+            }
         >
-            <img
-                src={brand.logo}
-                alt={brand.name}
-                draggable="false"
+            <div
                 className={`
-                    object-contain
+                    flex
+                    w-full
+                    items-center
+                    justify-center
                     ${isBadge
-                        ? 'max-h-[2cqw] max-w-[88%]'
-                        : 'max-h-[1.02cqw] max-w-[86%]'
+                        ? 'static h-full'
+                        : 'relative h-[1.03cqw] shrink-0'
                     }
                 `}
-                style={{
-                    transform: `scale(${brand.scale || 1})`,
-                    filter:
-                        brand.monochromeFilter
-                        || 'brightness(0) invert(1)',
-                    mixBlendMode:
-                        brand.monochromeBlendMode
-                        || 'normal'
-                }}
-            />
+            >
+                <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    draggable="false"
+                    className={`
+                        object-contain
+                        ${soldOut
+                            ? 'opacity-60'
+                            : 'opacity-100'
+                        }
+                        ${isBadge
+                            ? 'max-h-[2cqw] max-w-[88%]'
+                            : 'max-h-[1.02cqw] max-w-[86%]'
+                        }
+                    `}
+                    style={{
+                        transform: `scale(${brand.scale || 1})`,
+                        filter:
+                            brand.monochromeFilter
+                            || 'brightness(0) invert(1)',
+                        mixBlendMode:
+                            brand.monochromeBlendMode
+                            || 'normal'
+                    }}
+                />
+
+                {soldOut && (
+                    <span
+                        aria-hidden="true"
+                        className={`
+                            pointer-events-none
+                            absolute
+                            top-1/2
+                            z-10
+                            h-[0.07cqw]
+                            -translate-y-1/2
+                            -rotate-[12deg]
+                            bg-white/70
+                            ${isBadge
+                                ? 'left-0 w-full'
+                                : 'left-[10%] w-[80%]'
+                            }
+                        `}
+                    />
+                )}
+            </div>
+
+            {isBadge ? (
+                soldOut && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0">
+                        {soldOutLabel}
+                    </div>
+                )
+            ) : (
+                <div className="pointer-events-none flex h-[0.52cqw] w-full shrink-0 items-center justify-center">
+                    {soldOutLabel}
+                </div>
+            )}
         </div>
     );
 }
@@ -57,7 +119,9 @@ function FountainFlavorGrid({
     showTitle = true,
     title = 'FOUNTAIN FLAVORS',
     titleEs = 'SABORES DE FUENTE',
-    brandIds = DEFAULT_FOUNTAIN_DRINK_BRAND_IDS
+    brandIds = DEFAULT_FOUNTAIN_DRINK_BRAND_IDS,
+    soldOutBrandIds = [],
+    showSpanish = true
 }) {
     const brands = getFountainDrinkBrands(brandIds);
 
@@ -116,6 +180,10 @@ function FountainFlavorGrid({
                             key={brand.id}
                             brand={brand}
                             variant="badge"
+                            soldOut={
+                                soldOutBrandIds.includes(brand.id)
+                            }
+                            showSpanish={showSpanish}
                         />
                     ))}
                 </div>
@@ -139,6 +207,10 @@ function FountainFlavorGrid({
                             key={brand.id}
                             brand={brand}
                             variant="wordmark"
+                            soldOut={
+                                soldOutBrandIds.includes(brand.id)
+                            }
+                            showSpanish={showSpanish}
                         />
                     ))}
                 </div>

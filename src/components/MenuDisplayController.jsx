@@ -11,6 +11,11 @@ import {
 
 import { db } from '../firebase';
 
+import {
+    subscribeToMenuAvailability,
+    createMenuAvailabilityDisplayModel
+} from '../services/menuAvailability';
+
 const timestampToMillis = (value) => {
     if (!value) {
         return null;
@@ -179,6 +184,9 @@ export default function MenuDisplayController({
     const [currentTime, setCurrentTime] =
         useState(() => Date.now());
 
+    const [availabilityState, setAvailabilityState] =
+        useState(null);
+
     useEffect(() => {
         const menuRef = previewMode
             ? doc(
@@ -318,6 +326,42 @@ export default function MenuDisplayController({
     ]);
 
     useEffect(() => {
+        if (!activeLocation || !menuId) {
+            return undefined;
+        }
+
+        return subscribeToMenuAvailability({
+            locationId: activeLocation,
+            menuId,
+            onChange: (soldOutItems) => {
+                setAvailabilityState({
+                    locationId: activeLocation,
+                    menuId,
+                    soldOutItems
+                });
+
+                setCurrentTime(Date.now());
+            },
+            onError: (error) => {
+                console.error(
+                    `Unable to load ${menuLabel} availability:`,
+                    error
+                );
+            }
+        });
+    }, [
+        activeLocation,
+        menuId,
+        menuLabel
+    ]);
+
+    const soldOutItems =
+        availabilityState?.locationId === activeLocation
+            && availabilityState?.menuId === menuId
+            ? availabilityState.soldOutItems
+            : {};
+
+    useEffect(() => {
         const clock = window.setInterval(
             () => {
                 setCurrentTime(Date.now());
@@ -385,11 +429,19 @@ export default function MenuDisplayController({
         );
     }
 
+    const displaySoldOutItems =
+        createMenuAvailabilityDisplayModel(
+            displayedMenu,
+            soldOutItems
+        );
+
     return (
         <div className="w-screen h-screen overflow-hidden bg-[#0d0d0c] select-none">
             <PreviewComponent
                 menu={displayedMenu}
                 spotlight={activeSpotlight}
+                soldOutItems={displaySoldOutItems}
+                currentTime={currentTime}
             />
         </div>
     );
