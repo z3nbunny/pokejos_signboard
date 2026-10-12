@@ -4,7 +4,6 @@ import {
 } from 'react';
 
 import {
-    collection,
     doc,
     onSnapshot
 } from 'firebase/firestore';
@@ -16,126 +15,7 @@ import {
     createMenuAvailabilityDisplayModel
 } from '../services/menuAvailability';
 
-const timestampToMillis = (value) => {
-    if (!value) {
-        return null;
-    }
-
-    if (typeof value.toMillis === 'function') {
-        return value.toMillis();
-    }
-
-    if (typeof value === 'number') {
-        return value;
-    }
-
-    const parsedTime = new Date(value).getTime();
-
-    return Number.isFinite(parsedTime)
-        ? parsedTime
-        : null;
-};
-
-const snapshotToSpotlights = (
-    snapshot,
-    scope
-) =>
-    snapshot.docs.map((snapshotDocument) => ({
-        id: snapshotDocument.id,
-        scope,
-        ...snapshotDocument.data()
-    }));
-
-const isSpotlightAvailable = (
-    spotlight,
-    activeLocation,
-    currentTime,
-    includeScheduledSpotlights
-) => {
-    if (spotlight.enabled === false) {
-        return false;
-    }
-
-    const targetedLocations = Array.isArray(
-        spotlight.targetLocationIds
-    )
-        ? spotlight.targetLocationIds
-        : [];
-
-    if (
-        targetedLocations.length > 0
-        && !targetedLocations.includes(activeLocation)
-    ) {
-        return false;
-    }
-
-    /*
-     * A device preview may display an enabled future Spotlight.
-     * Published menu screens continue to respect its schedule.
-     */
-    if (includeScheduledSpotlights) {
-        return true;
-    }
-
-    const startsAt = timestampToMillis(
-        spotlight.startsAt
-    );
-
-    const endsAt = timestampToMillis(
-        spotlight.endsAt
-    );
-
-    return (
-        (
-            startsAt === null
-            || startsAt <= currentTime
-        )
-        && (
-            endsAt === null
-            || currentTime < endsAt
-        )
-    );
-};
-
-const compareSpotlights = (
-    firstSpotlight,
-    secondSpotlight
-) => {
-    /*
-     * A location-created Spotlight takes precedence over a
-     * globally shared Spotlight.
-     */
-    if (
-        firstSpotlight.scope
-        !== secondSpotlight.scope
-    ) {
-        return firstSpotlight.scope === 'local'
-            ? -1
-            : 1;
-    }
-
-    const firstStart = timestampToMillis(
-        firstSpotlight.startsAt
-    ) || 0;
-
-    const secondStart = timestampToMillis(
-        secondSpotlight.startsAt
-    ) || 0;
-
-    if (firstStart !== secondStart) {
-        return secondStart - firstStart;
-    }
-
-    const firstUpdated = timestampToMillis(
-        firstSpotlight.updatedAt
-    ) || 0;
-
-    const secondUpdated = timestampToMillis(
-        secondSpotlight.updatedAt
-    ) || 0;
-
-    return secondUpdated - firstUpdated;
-};
+import useMenuSpotlight from '../hooks/useMenuSpotlight';
 
 function DisplayMessage({
     heading,
@@ -171,12 +51,6 @@ export default function MenuDisplayController({
 }) {
     const [displayedMenu, setDisplayedMenu] =
         useState(null);
-
-    const [globalSpotlights, setGlobalSpotlights] =
-        useState([]);
-
-    const [localSpotlights, setLocalSpotlights] =
-        useState([]);
 
     const [menuStatus, setMenuStatus] =
         useState('loading');
@@ -258,74 +132,6 @@ export default function MenuDisplayController({
     ]);
 
     useEffect(() => {
-        const globalSpotlightCollection = collection(
-            db,
-            'globalMenuSpotlights',
-            menuId,
-            'items'
-        );
-
-        const unsubscribe = onSnapshot(
-            globalSpotlightCollection,
-            (snapshot) => {
-                setGlobalSpotlights(
-                    snapshotToSpotlights(
-                        snapshot,
-                        'global'
-                    )
-                );
-            },
-            (error) => {
-                console.error(
-                    `Unable to load global ${menuLabel} Spotlights:`,
-                    error
-                );
-
-                setGlobalSpotlights([]);
-            }
-        );
-
-        return () => unsubscribe();
-    }, [menuId, menuLabel]);
-
-    useEffect(() => {
-        const localSpotlightCollection = collection(
-            db,
-            'locations',
-            activeLocation,
-            'menuSpotlights',
-            menuId,
-            'items'
-        );
-
-        const unsubscribe = onSnapshot(
-            localSpotlightCollection,
-            (snapshot) => {
-                setLocalSpotlights(
-                    snapshotToSpotlights(
-                        snapshot,
-                        'local'
-                    )
-                );
-            },
-            (error) => {
-                console.error(
-                    `Unable to load location ${menuLabel} Spotlights:`,
-                    error
-                );
-
-                setLocalSpotlights([]);
-            }
-        );
-
-        return () => unsubscribe();
-    }, [
-        activeLocation,
-        menuId,
-        menuLabel
-    ]);
-
-    useEffect(() => {
         if (!activeLocation || !menuId) {
             return undefined;
         }
@@ -374,19 +180,12 @@ export default function MenuDisplayController({
         };
     }, []);
 
-    const activeSpotlight = [
-        ...localSpotlights,
-        ...globalSpotlights
-    ]
-        .filter((spotlight) =>
-            isSpotlightAvailable(
-                spotlight,
-                activeLocation,
-                currentTime,
-                previewMode
-            )
-        )
-        .sort(compareSpotlights)[0] || null;
+    const activeSpotlight = useMenuSpotlight({
+        locationId: activeLocation,
+        menuId,
+        currentTime,
+        includeScheduledSpotlights: previewMode
+    });
 
     if (menuStatus === 'loading') {
         return (

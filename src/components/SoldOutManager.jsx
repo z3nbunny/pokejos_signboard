@@ -694,6 +694,8 @@ function SoldOutMenuPanel({
             {publishedMenu && !isLoading && (
                 <MenuAvailabilityPreview
                     menu={publishedMenu}
+                    menuId={activeMenuId}
+                    locationId={locationId}
                     menuLabel={
                         activeMenuId === 'meat'
                             ? 'Meat Menu'
