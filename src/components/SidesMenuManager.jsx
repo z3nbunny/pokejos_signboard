@@ -264,6 +264,22 @@ const createCleanMenu = (menu) => ({
         ).map((item, itemIndex) => ({
             ...item,
             id: cleanText(item.id),
+            availabilityOptionsDisplay:
+                item.availabilityOptionsDisplay === 'brand_list'
+                    ? 'brand_list'
+                    : 'none',
+            availabilityOptions: (
+                Array.isArray(item.availabilityOptions)
+                    ? item.availabilityOptions
+                    : []
+            ).map((option) => ({
+                ...option,
+                id: cleanText(option.id),
+                name: cleanText(option.name),
+                nameEs: cleanText(option.nameEs),
+                drinkSourceId:
+                    cleanText(option.drinkSourceId)
+            })),
             name: cleanText(item.name),
             nameEs: cleanText(item.nameEs),
             description: cleanText(item.description),

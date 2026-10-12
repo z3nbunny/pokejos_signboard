@@ -4,6 +4,7 @@ import { doc, onSnapshot, getDoc, setDoc, collection, addDoc, deleteDoc } from '
 import { useAuth } from '../contexts/useAuth';
 import FleetDashboard from './FleetDashboard';
 import RestaurantMenuWorkspace from './RestaurantMenuWorkspace';
+import SoldOutManager from './SoldOutManager';
 import DevicePairingManager from './DevicePairingManager';
 
 const omitDocumentId = (record) => {
@@ -943,6 +944,10 @@ export default function Admin() {
                             { id: 'merch', label: 'Merch Slides' },
                             { id: 'info', label: 'Bottom Info Cards' },
                             { id: 'global', label: 'Global Settings' },
+                            {
+                                id: 'availability',
+                                label: 'Item Availability'
+                            },
                             ...(userData?.role === 'super_admin'
                                 ? [
                                     {
@@ -1400,6 +1405,13 @@ export default function Admin() {
                                 </div>
                                 <button type="submit" className="w-full py-3.5 bg-accent hover:bg-accent-hover text-white font-bold uppercase text-sm rounded-full tracking-wider transition-colors shadow-sm">Save Global Settings</button>
                             </form>
+                        )}
+
+                        {/* TAB: ITEM AVAILABILITY */}
+                        {activeTab === 'availability' && (
+                            <SoldOutManager
+                                locationId={activeLocation}
+                            />
                         )}
 
                         {/* TAB: RESTAURANT MENUS */}

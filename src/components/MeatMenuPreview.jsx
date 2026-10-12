@@ -8,6 +8,12 @@ import {
     MENU_TEXT_CLASSES
 } from '../styles/menuTypography';
 
+import MenuSoldOutLabel from './MenuSoldOutLabel';
+
+import {
+    isMenuItemSoldOut
+} from '../services/menuAvailability';
+
 const MEAT_TEXT_CLASSES = {
     sectionTitle:
         MENU_TEXT_CLASSES.sectionTitle
@@ -185,8 +191,21 @@ function MenuItem({
     item,
     dense,
     sectionId,
-    showSpanish = true
+    showSpanish = true,
+    soldOutItems = {},
+    currentTime = null
 }) {
+    const soldOut = isMenuItemSoldOut(
+        soldOutItems,
+        item,
+        currentTime
+    );
+
+    const unavailableTextClass =
+        soldOut ? 'line-through opacity-60' : '';
+
+    const unavailableDetailClass =
+        soldOut ? 'opacity-60' : '';
     const priceOptions = sortByOrder(
         item.priceOptions
     );
@@ -224,7 +243,9 @@ function MenuItem({
                     + ' min-w-0 flex flex-wrap '
                     + 'items-baseline gap-x-[0.25cqw]'
                 }>
-                    <span>{item.name}</span>
+                    <span className={unavailableTextClass}>
+                        {item.name}
+                    </span>
 
                     {showSpanish && (
                         <span className="whitespace-nowrap">
@@ -239,6 +260,11 @@ function MenuItem({
                                 {item.nameEs || 'Pollo'}
                             </span>
                         </span>
+                    )}
+                    {soldOut && (
+                        <MenuSoldOutLabel
+                            showSpanish={showSpanish}
+                        />
                     )}
                 </h3>
 
@@ -255,7 +281,9 @@ function MenuItem({
                             </span>
                         )}
 
-                    <span className="text-[clamp(12px,0.92cqw,34px)] font-extrabold text-[#f4c542] tabular-nums">
+                    <span
+                        className={`text-[clamp(12px,0.92cqw,34px)] font-extrabold text-[#f4c542] tabular-nums ${unavailableTextClass}`}
+                    >
                         {priceOptions.map(
                             (priceOption) =>
                                 formatPrice(
@@ -289,7 +317,9 @@ function MenuItem({
                         )
                     }
                 >
-                    <span>{item.name}</span>
+                    <span className={unavailableTextClass}>
+                        {item.name}
+                    </span>
 
                     {showSpanish && item.nameEs && (
                         <span
@@ -311,10 +341,18 @@ function MenuItem({
                                     </span>
                                 )}
 
-                            <span lang="es">
+                            <span
+                                lang="es"
+                                className={unavailableTextClass}
+                            >
                                 {item.nameEs}
                             </span>
                         </span>
+                    )}
+                    {soldOut && (
+                        <MenuSoldOutLabel
+                            showSpanish={showSpanish}
+                        />
                     )}
                 </h3>
 
@@ -328,7 +366,9 @@ function MenuItem({
                                 </span>
                             )}
 
-                        <span className={MEAT_TEXT_CLASSES.price}>
+                        <span
+                            className={`${MEAT_TEXT_CLASSES.price} ${unavailableTextClass}`}
+                        >
                             {formatPrice(
                                 singlePrice.priceCents
                             )}
@@ -338,7 +378,9 @@ function MenuItem({
             </div>
 
             {displayedDescription && (
-                <p className={MEAT_TEXT_CLASSES.supporting}>
+                <p
+                    className={`${MEAT_TEXT_CLASSES.supporting} ${unavailableDetailClass}`}
+                >
                     {displayedDescription}
                 </p>
             )}
@@ -346,9 +388,13 @@ function MenuItem({
             {displayedDetails.length > 0 && (
                 <ul
                     className={
-                        sectionId === 'family_packs'
-                            ? 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-[0.75cqw] gap-y-[0.12cqw]'
-                            : 'space-y-[0.1cqw]'
+                        (
+                            sectionId === 'family_packs'
+                                ? 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-[0.75cqw] gap-y-[0.12cqw]'
+                                : 'space-y-[0.1cqw]'
+                        )
+                        + ' '
+                        + unavailableDetailClass
                     }
                 >
                     {displayedDetails.map(
@@ -391,7 +437,9 @@ function MenuItem({
                                     )}
                                 </span>
 
-                                <span className={MEAT_TEXT_CLASSES.price}>
+                                <span
+                                    className={`${MEAT_TEXT_CLASSES.price} ${unavailableTextClass}`}
+                                >
                                     {formatPrice(
                                         priceOption
                                             .priceCents
@@ -598,7 +646,9 @@ function MenuModifierList({
 
 function MenuSection({
     section,
-    showSpanish = true
+    showSpanish = true,
+    soldOutItems = {},
+    currentTime = null
 }) {
     const visibleItems = sortByOrder(
         section.items
@@ -719,12 +769,10 @@ function MenuSection({
                                 <MenuItem
                                     item={item}
                                     dense={dense}
-                                    sectionId={
-                                        section.id
-                                    }
-                                    showSpanish={
-                                        showSpanish
-                                    }
+                                    sectionId={section.id}
+                                    showSpanish={showSpanish}
+                                    soldOutItems={soldOutItems}
+                                    currentTime={currentTime}
                                 />
 
                                 <MenuModifierList
@@ -1118,7 +1166,9 @@ function MenuNotices({
 
 export default function MeatMenuPreview({
     menu,
-    spotlight = null
+    spotlight = null,
+    soldOutItems = {},
+    currentTime = null
 }) {
     const showSpanish =
         shouldShowSpanish(menu);
@@ -1165,6 +1215,8 @@ export default function MeatMenuPreview({
                                             showSpanish={
                                                 showSpanish
                                             }
+                                            soldOutItems={soldOutItems}
+                                            currentTime={currentTime}
                                         />
                                     )
                                 )}

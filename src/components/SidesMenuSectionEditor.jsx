@@ -1,6 +1,27 @@
 import { useState } from 'react';
 import MenuEditorCard from './MenuEditorCard';
 import MenuEditorItemList from './MenuEditorItemList';
+import {
+    getFountainDrinkBrands
+} from '../data/fountainDrinkBrands';
+
+const DRINK_OPTION_PRESETS = [
+    ...getFountainDrinkBrands().map((brand) => ({
+        drinkSourceId: brand.id,
+        name: brand.name,
+        nameEs: ''
+    })),
+    {
+        drinkSourceId: 'sweet_tea',
+        name: 'Sweet Tea',
+        nameEs: 'Té Dulce'
+    },
+    {
+        drinkSourceId: 'unsweet_tea',
+        name: 'Unsweet Tea',
+        nameEs: 'Té Sin Azúcar'
+    }
+];
 
 const DIETARY_OPTIONS = [
     {
@@ -154,6 +175,205 @@ function ReorderButtons({
                 ↓
             </button>
         </div>
+    );
+}
+
+function AvailabilityOptionsEditor({
+    options,
+    disabled,
+    onChange,
+    allowDrinkPresets = false
+}) {
+    const updateOption = (optionId, field, value) => {
+        onChange(
+            options.map((option) =>
+                option.id === optionId
+                    ? { ...option, [field]: value }
+                    : option
+            )
+        );
+    };
+
+    const addDrinkOptions = () => {
+        const existingSources = new Set(
+            options.map(
+                (option) => option.drinkSourceId
+            )
+        );
+
+        const additions = DRINK_OPTION_PRESETS
+            .filter(
+                (preset) =>
+                    !existingSources.has(
+                        preset.drinkSourceId
+                    )
+            )
+            .map((preset) => ({
+                ...preset,
+                id: createEditorId('availability')
+            }));
+
+        if (additions.length === 0) {
+            return;
+        }
+
+        onChange([
+            ...options,
+            ...additions
+        ]);
+    };
+
+    const addOption = () => {
+        onChange([
+            ...options,
+            {
+                id: createEditorId('availability'),
+                name: 'New option',
+                nameEs: ''
+            }
+        ]);
+    };
+
+    const removeOption = (option) => {
+        const confirmed = window.confirm(
+            `Remove "${option.name || 'this option'}"? `
+            + 'Adding it again will create a new availability ID.'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        onChange(
+            options.filter(
+                (current) => current.id !== option.id
+            )
+        );
+    };
+
+    const moveOption = (index, direction) => {
+        const targetIndex = index + direction;
+
+        if (
+            targetIndex < 0
+            || targetIndex >= options.length
+        ) {
+            return;
+        }
+
+        const nextOptions = [...options];
+        const [movedOption] = nextOptions.splice(index, 1);
+        nextOptions.splice(targetIndex, 0, movedOption);
+
+        onChange(nextOptions);
+    };
+
+    return (
+        <section className="space-y-3 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-text-primary">
+                    Individual Brands / Choices
+                </h4>
+
+                {allowDrinkPresets && (
+                    <button
+                        type="button"
+                        onClick={addDrinkOptions}
+                        disabled={disabled}
+                        className="rounded-full border border-border px-3 py-2 text-xs font-bold text-text-primary hover:bg-border disabled:opacity-40"
+                    >
+                        Add Fountain Flavors & Tea
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    onClick={addOption}
+                    disabled={disabled}
+                    className="rounded-full border border-border px-3 py-2 text-xs font-bold text-text-primary hover:bg-border disabled:opacity-40"
+                >
+                    Add Option
+                </button>
+            </div>
+
+            <p className="text-xs leading-relaxed text-text-secondary">
+                Optional choices sharing this item's price.
+                Rename an existing option to keep its availability
+                ID. Remove it and add another when replacing it
+                with a different product.
+            </p>
+
+            {options.length === 0 && (
+                <p className="text-xs text-text-secondary">
+                    No individual options configured.
+                </p>
+            )}
+
+            {options.map((option, index) => (
+                <div
+                    key={option.id}
+                    className="space-y-3 rounded-xl border border-border bg-bg p-3"
+                >
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Option — English</FieldLabel>
+
+                            <input
+                                type="text"
+                                value={option.name || ''}
+                                onChange={(event) =>
+                                    updateOption(
+                                        option.id,
+                                        'name',
+                                        event.target.value
+                                    )
+                                }
+                                disabled={disabled}
+                                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary disabled:opacity-50"
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Option — Spanish</FieldLabel>
+
+                            <input
+                                type="text"
+                                value={option.nameEs || ''}
+                                onChange={(event) =>
+                                    updateOption(
+                                        option.id,
+                                        'nameEs',
+                                        event.target.value
+                                    )
+                                }
+                                disabled={disabled}
+                                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary disabled:opacity-50"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <ReorderButtons
+                            index={index}
+                            count={options.length}
+                            onMove={(direction) =>
+                                moveOption(index, direction)
+                            }
+                            disabled={disabled}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => removeOption(option)}
+                            disabled={disabled}
+                            className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </section>
     );
 }
 
@@ -487,7 +707,43 @@ function ItemEditor({
                     </p>
                 </div>
             </div>
+            <label className="flex items-center gap-2 text-sm font-bold">
+                <input
+                    type="checkbox"
+                    checked={
+                        item.availabilityOptionsDisplay
+                        === 'brand_list'
+                    }
+                    onChange={(event) =>
+                        changeField(
+                            'availabilityOptionsDisplay',
+                            event.target.checked
+                                ? 'brand_list'
+                                : 'none'
+                        )
+                    }
+                    disabled={disabled}
+                />
 
+                Show options as the brand list on the menu
+            </label>
+            <AvailabilityOptionsEditor
+                options={
+                    Array.isArray(item.availabilityOptions)
+                        ? item.availabilityOptions
+                        : []
+                }
+                disabled={disabled}
+                allowDrinkPresets={
+                    item.id === 'fountain_drinks_and_tea'
+                }
+                onChange={(nextOptions) =>
+                    changeField(
+                        'availabilityOptions',
+                        nextOptions
+                    )
+                }
+            />
             <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-bold">
                 <input
                     type="checkbox"
