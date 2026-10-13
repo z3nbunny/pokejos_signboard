@@ -727,7 +727,7 @@ function PricingGroup({
                 rounded-[0.55cqw]
                 border
                 border-[#f4c542]/45
-                bg-[#f4c542]/8
+                bg-transparent
                 ${isSidesPricing
                     ? 'px-[0.92cqw] py-[0.68cqw]'
                     : 'px-[0.78cqw] py-[0.52cqw]'
@@ -1227,9 +1227,10 @@ function DrinkAvailabilityPanel({
                                 )}
                             </span>
 
-                            <span className="ml-[0.3cqw] font-bold text-[#f4c542]">
-                                SOLD OUT
-                                {showSpanish && ' · AGOTADO'}
+                            <span className="ml-[0.3cqw] inline-flex">
+                                <MenuSoldOutLabel
+                                    showSpanish={showSpanish}
+                                />
                             </span>
                         </p>
                     ))}

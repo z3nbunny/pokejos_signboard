@@ -12,7 +12,7 @@ function BrandTile({
     const isBadge = variant === 'badge';
 
     const soldOutLabel = soldOut && (
-        <span className="block w-full bg-[#0d0d0c]/95 px-[0.08cqw] py-[0.03cqw] text-center text-[0.4cqw] font-black uppercase leading-tight text-[#f4c542] whitespace-nowrap">
+        <span className="inline-flex items-center rounded-[0.2cqw] border border-white bg-white px-[0.15cqw] py-[0.03cqw] text-center text-[0.4cqw] font-black uppercase leading-tight text-black whitespace-nowrap">
             SOLD OUT
             {showSpanish && ' · AGOTADO'}
         </span>
@@ -30,8 +30,8 @@ function BrandTile({
                 bg-transparent
                 px-[0.22cqw]
                 ${isBadge
-                    ? 'h-[3cqw] w-[3.75cqw] justify-self-center overflow-hidden border border-transparent py-[0.14cqw]'
-                    : 'h-[1.55cqw] flex-col overflow-visible border-0 py-0'
+                    ? 'h-[3cqw] w-full flex-col overflow-visible border border-transparent py-[0.14cqw]'
+                    : 'h-[1.55cqw] w-full flex-col overflow-visible border-0 py-0'
                 }
             `}
             title={
@@ -42,13 +42,14 @@ function BrandTile({
         >
             <div
                 className={`
+                    relative
                     flex
-                    w-full
+                    shrink-0
                     items-center
                     justify-center
                     ${isBadge
-                        ? 'static h-full'
-                        : 'relative h-[1.03cqw] shrink-0'
+                        ? 'h-[2.1cqw] w-[3.75cqw] max-w-full'
+                        : 'h-[1.03cqw] w-full'
                     }
                 `}
             >
@@ -99,17 +100,9 @@ function BrandTile({
                 )}
             </div>
 
-            {isBadge ? (
-                soldOut && (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0">
-                        {soldOutLabel}
-                    </div>
-                )
-            ) : (
-                <div className="pointer-events-none flex h-[0.52cqw] w-full shrink-0 items-center justify-center">
-                    {soldOutLabel}
-                </div>
-            )}
+            <div className="pointer-events-none flex h-[0.52cqw] w-full shrink-0 items-center justify-center">
+                {soldOutLabel}
+            </div>
         </div>
     );
 }
