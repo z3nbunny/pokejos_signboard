@@ -18,7 +18,7 @@ Supported location IDs: `brodie`, `parmer`, and `round_rock`.
 | --- | --- | --- |
 | Meat menu | `meat_menu` | `screen=meat` |
 | Sides menu | `sides_menu` | `screen=sides` |
-| Lobby | Keep the existing device ID | `screen=lobby` (default) |
+| Lobby | `lobby` | `screen=lobby` (default) |
 
 Location and device identity are supplied in the display URL. Pairing approves the physical device for that identity. Device IDs must be unique within a location.
 
