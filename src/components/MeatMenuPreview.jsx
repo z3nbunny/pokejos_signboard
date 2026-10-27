@@ -82,7 +82,7 @@ const SECTION_SIZE_CLASSES = {
     bbq_plates: 'shrink-0',
     bbq_sandwiches: 'shrink-0',
     family_packs: 'shrink-0',
-    kids_meals: 'flex-1',
+    kids_meals: 'flex-1 mt-[1.9cqw]',
     meat_by_pound: 'flex-1',
     more_great_eating: 'shrink-0'
 };
@@ -731,9 +731,11 @@ function MenuSection({
                 'flex-1 min-h-0 flex flex-col '
                 + 'justify-evenly gap-[0.12cqw]'
             )
-            : dense
-                ? 'space-y-[0.38cqw]'
-                : 'space-y-[0.56cqw]';
+            : section.id === 'family_packs'
+                ? 'space-y-[2cqw]'
+                : dense
+                    ? 'space-y-[0.38cqw]'
+                    : 'space-y-[0.56cqw]';
 
     const sizeClass =
         SECTION_SIZE_CLASSES[section.id]
