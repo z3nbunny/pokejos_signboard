@@ -1,16 +1,63 @@
-# React + Vite
+# Pok-E-Jo's Digital Signboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Digital signage and restaurant menus for Pok-E-Jo's, built with React, Vite, Tailwind CSS, and Firebase.
 
-Currently, two official plugins are available:
+The system supports lobby displays, dedicated meat and sides menus, scheduled campaigns, menu spotlights, and location-specific sold-out updates. TVs use Fire TV Sticks running Fully Kiosk Browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Documentation
 
-## React Compiler
+Start with the [documentation index](docs/README.md).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [Fire TV setup and pairing](docs/fire-tv-setup.md)
 
-## Expanding the ESLint configuration
+## Locations and screens
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Supported location IDs: `brodie`, `parmer`, and `round_rock`.
+
+| Screen | Device ID convention | Screen parameter |
+| --- | --- | --- |
+| Meat menu | `meat_menu` | `screen=meat` |
+| Sides menu | `sides_menu` | `screen=sides` |
+| Lobby | Keep the existing device ID | `screen=lobby` (default) |
+
+Location and device identity are supplied in the display URL. Pairing approves the physical device for that identity. Device IDs must be unique within a location.
+
+## Local development
+
+Install Node.js compatible with the project's Vite version and npm. Configure access to the intended Firebase project before testing writes.
+
+```sh
+npm ci
+npm run dev
+```
+
+Use an authorized Google account for the admin dashboard by opening the app with `#admin`. Google sign-in alone does not grant access; an approved administrator profile is required.
+
+## Checks and deployment
+
+```sh
+npm run lint
+npm run build
+npm run preview
+```
+
+`preview` serves the production build locally.
+
+`npm run deploy` runs the production build through `predeploy`, then publishes `dist/` using `gh-pages`. The Vite base path is currently `/pokejos_signboard/`.
+
+Frontend deployment does not publish Firestore security rules. Review backend configuration and rules separately when changing access or data structures.
+
+## Project layout
+
+- `src/`: application components, services, hooks, and styles.
+- `public/`: static assets.
+- `docs/`: operational and maintenance documentation.
+
+## Access and device operation
+
+- Administrators sign in with Google and require an authorized profile.
+- TVs authenticate anonymously and require pairing approval.
+- Super administrators manage global settings and menus; location administrators have location-scoped access.
+- Device monitoring includes heartbeats and screenshots, with remote commands supported through Fully Kiosk.
+
+Do not commit credentials, kiosk PINs, remote administration passwords, or service-account keys.
