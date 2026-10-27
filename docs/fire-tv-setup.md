@@ -112,10 +112,13 @@ The section names follow Fully's published configuration guide. Labels can diffe
 | --- | --- | --- |
 | Display URL | Settings > Web Content Settings > Start URL | Use the full location/device/screen URL from section 5. |
 | Application commands | Settings > Advanced Web Settings > Enable JavaScript Interface (PLUS) | On. |
-| Remote management | Settings > Remote Administration (PLUS) > Enable Remote Administration | On. |
-| Remote password | Settings > Remote Administration (PLUS) > Remote Admin Password | Set a private password. |
-| Local browser access to Fully | Settings > Remote Administration (PLUS) > Remote Admin from Local Network | On if local remote access is needed. A browser on the same reachable network uses `http://FIRE_STICK_IP:2323`. |
-| Screenshot capture | Settings > Remote Administration (PLUS) > Enable Screenshot on Remote Admin | On. |
+| Fully Remote Admin server | Settings > Remote Administration (PLUS) > Enable Remote Administration | Off. Our dashboard uses Firestore and the JavaScript interface. |
+| Fully local remote access | Settings > Remote Administration (PLUS) > Remote Admin from Local Network | Off where configurable; do not enable the parent feature to change a disabled child option. |
+| Fully Cloud remote access | Settings > Remote Administration (PLUS) > Remote Admin from Fully Cloud | Off where present. |
+| Remote Admin screenshot option | Settings > Remote Administration (PLUS) > Enable Screenshot on Remote Admin | Leave off initially; test our JavaScript screenshot capture separately. If unavailable while the parent feature is off, leave it unavailable. |
+| Microphone access for websites | Settings > Web Content Settings > Enable Microphone Access (PLUS) | Off. |
+| Audio recording uploads | Settings > Web Content Settings > Enable Audio Record Upload (PLUS) | Off. |
+| Sound-based motion detection | Settings > Motion Detection (PLUS) > Enable Acoustic Motion Detection | Off. |
 | Screenshot restriction | Settings > Kiosk Mode (PLUS) > Disable Screenshots, or Allow Screenshots where present | Disable Screenshots off / Allow Screenshots on. This was important on the existing installation; the option may be absent on other versions. |
 | Kiosk protection | Settings > Kiosk Mode (PLUS) > Enable Kiosk Mode | On; complete activation/restart prompts. |
 | Kiosk PIN | Settings > Kiosk Mode (PLUS) > Kiosk Mode PIN | Set a private PIN and test it. |
@@ -128,9 +131,21 @@ The section names follow Fully's published configuration guide. Labels can diffe
 | Preserve pairing storage | Settings > Web Auto Reload | Keep Delete Webstorage on Auto Reload and Delete Cookies on Auto Reload off. Check any Basic Web Automation rules under Advanced Web Settings for storage/cookie deletion too. |
 | Startup option location | Settings > Device Management > Launch on Boot | Reference only; manual launch remains the standard Fire Stick recovery procedure below. |
 
+### Microphone-free setup and dashboard control
+
+**Do not grant Fully microphone/Record Audio permission.** Deny microphone prompts, including prompts shown while enabling other features. If previously granted, use **Fire TV Home > Settings > Applications > Manage Installed Applications > Fully Kiosk Browser > Permissions > Microphone (or Record Audio) > Deny**, where that permission is exposed. Reopen Fully and recheck permission after a restart.
+
+Fully Remote Administration is disabled in this setup. It is a different feature from our Admin Dashboard. The current `DeviceTelemetry.jsx` receives commands through Firestore and calls Fully's local JavaScript interface for Sleep, Wake, cache clearing, and screenshots. It does not contact Fully's HTTP Remote Admin server. Keep Enable JavaScript Interface on.
+
+The code path does not use microphone APIs. This does not establish that every Fully version will allow every feature with all of these settings: verify the commands and screenshot capture on the actual stick with Remote Administration off and microphone permission denied. If a feature requests microphone access or cannot work under this configuration, leave the permission denied and record the feature as unavailable for follow-up. Do not enable microphone access as a troubleshooting workaround.
+
+The previous requirement to enable Fully Remote Administration was broader than our code requires. Do not document Remote Admin itself as inherently requiring microphone access; acoustic motion detection and web audio access are separate features, and Fire OS permission behavior can vary.
+
+Fully documents that the Fire TV microphone icon may remain visible even when permission is denied and the microphone is unused. Keep access denied regardless of the icon; disappearance after a future update is possible, not guaranteed.
+
 Dashboard Sleep starts Fully's black screensaver; it does not physically power off the TV. Disabling the automatic screensaver timer does not prevent a manual dashboard Sleep command.
 
-If Fully's links to Android permission settings crash, return to **Fire TV Home > Settings > Applications > Manage Installed Applications > Fully Kiosk Browser > Permissions**, where that entry is available, and grant the listed permissions needed for this setup. Special permissions may not be listed there or available at all on Fire OS; do not assume a missing permission was granted.
+If Fully's links to Android permission settings crash, return to **Fire TV Home > Settings > Applications > Manage Installed Applications > Fully Kiosk Browser > Permissions**, where that entry is available, and review the listed permissions needed for this setup. Keep Microphone/Record Audio denied. Special permissions may not be listed there or available at all on Fire OS; do not assume a missing permission was granted.
 
 Exit and reopen Fully after changes; complete any request to restart in kiosk mode. Confirm the PIN and screenshots actually work.
 
@@ -180,10 +195,12 @@ If the TV reports that its identity is registered to a different URL, check the 
 
 - [ ] Correct location, device ID, screen, and Start URL.
 - [ ] Fully PLUS license is active.
+- [ ] Fully Remote Administration is off; microphone/Record Audio permission is denied.
+- [ ] Web microphone access, audio recording uploads, and acoustic motion detection are off.
 - [ ] For menus: intended menu is published; prices, Spanish setting, logos, and framing look correct.
 - [ ] For lobby: intended campaigns/cards load and rotating content advances normally.
 - [ ] Heartbeat updates in the dashboard. The current code sends one approximately every 60 seconds.
-- [ ] A newly requested screenshot shows current content.
+- [ ] With microphone permission still denied and Fully Remote Administration off, request a fresh dashboard screenshot and check current content. If it fails, record the installed versions and failure for follow-up; do not grant microphone access.
 - [ ] Remote Reload returns to the display and retains pairing.
 - [ ] Dashboard Sleep shows the black screensaver; Wake restores the display.
 - [ ] For menus: a temporary sold-out change appears and is cleared afterward.
@@ -219,7 +236,8 @@ Pass only when the display remains visible and responsive throughout intended di
 - [ ] If Fire TV Home appears, open Fully manually and confirm the correct URL, pairing, and content remain.
 - [ ] Disconnect and restore power to the TV and Fire Stick, then check TV power/input behavior separately from Fire Stick startup.
 - [ ] If the TV itself stays off, document how staff turn it on; Fully cannot solve the TV's power-restoration behavior.
-- [ ] Confirm heartbeat, screenshot, and Reload work again.
+- [ ] Confirm microphone/Record Audio permission remains denied and Fully Remote Administration remains off.
+- [ ] Confirm heartbeat, screenshot (if supported under this configuration), and Reload work again.
 - [ ] Show staff how to turn on the TV, select the input, and open Fully after an outage.
 
 Prefer Reload for routine recovery. The previous app restart/reboot workflow could return to Fire TV Home.
@@ -231,7 +249,8 @@ Prefer Reload for routine recovery. The previous app restart/reboot workflow cou
 | Downloader cannot install Fully | Verify Developer Options and Downloader's Install Unknown Apps permission. |
 | TV registration error | Check all URL parameters, lowercase IDs, and a valid device ID. |
 | Device already paired | Confirm intentional replacement; do not replace a different screen. |
-| Screenshot fails | Check JavaScript Interface, screenshot capture, and screenshot permission inside Kiosk Mode; reopen Fully. |
+| Screenshot fails | Keep microphone permission denied and Remote Administration off. Check JavaScript Interface and screenshot permission inside Kiosk Mode, then reopen Fully. Record any version-specific limitation instead of enabling microphone access. |
+| Microphone prompt or persistent icon | Deny microphone/Record Audio permission. Disable acoustic motion detection, web microphone access, and audio recording uploads. Fully documents that Fire TV may still show the icon with permission denied; the icon alone is not evidence that permission is enabled. |
 | PIN does not take effect | Complete the kiosk activation/restart prompt and reopen Fully. |
 | Wrong or missing content | Check location, screen parameter, publication/schedule, and absence of draft preview mode. |
 | TV goes dark after hours | Check the TV's own timers, Fire TV idle settings, Fully timers, and application hours. Record whether heartbeat continues and whether the panel is powered on. |
@@ -249,6 +268,9 @@ Official links checked October 27, 2026. Installation steps follow the Downloade
 - [Fully advanced web settings](https://www.fully-kiosk.com/docs/en/configuration/advanced-web).
 - [Fully device management](https://www.fully-kiosk.com/docs/en/configuration/device-management).
 - [Fully kiosk settings](https://www.fully-kiosk.com/docs/en/configuration/kiosk-mode).
+- [Fully JavaScript interface](https://www.fully-kiosk.com/docs/en/api/javascript).
+- [Fully motion detection settings](https://www.fully-kiosk.com/docs/en/configuration/motion-detection).
+- [Fully web content settings](https://www.fully-kiosk.com/docs/en/configuration/web-content).
 - [Fully remote administration settings](https://www.fully-kiosk.com/docs/en/configuration/remote-administration).
 - [Fully screensaver settings](https://www.fully-kiosk.com/docs/en/configuration/screensaver).
 - [Fully toolbar settings](https://www.fully-kiosk.com/docs/en/configuration/toolbars-appearance).
