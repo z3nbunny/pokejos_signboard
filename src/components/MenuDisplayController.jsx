@@ -15,7 +15,7 @@ import {
     createMenuAvailabilityDisplayModel
 } from '../services/menuAvailability';
 
-import useMenuSpotlight from '../hooks/useMenuSpotlight';
+import { useMenuSpotlights } from '../hooks/useMenuSpotlight';
 
 function DisplayMessage({
     heading,
@@ -172,7 +172,7 @@ export default function MenuDisplayController({
             () => {
                 setCurrentTime(Date.now());
             },
-            60000
+            1000
         );
 
         return () => {
@@ -180,7 +180,7 @@ export default function MenuDisplayController({
         };
     }, []);
 
-    const activeSpotlight = useMenuSpotlight({
+    const activeSpotlights = useMenuSpotlights({
         locationId: activeLocation,
         menuId,
         currentTime,
@@ -238,7 +238,7 @@ export default function MenuDisplayController({
         <div className="w-screen h-screen overflow-hidden bg-[#0d0d0c] select-none">
             <PreviewComponent
                 menu={displayedMenu}
-                spotlight={activeSpotlight}
+                spotlights={activeSpotlights}
                 soldOutItems={displaySoldOutItems}
                 currentTime={currentTime}
             />

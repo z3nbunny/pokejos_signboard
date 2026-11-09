@@ -1,3 +1,4 @@
+import SpotlightRotator from './SpotlightRotator';
 import {
     createMenuDisplayModel,
     shouldShowSpanish
@@ -1169,6 +1170,7 @@ function MenuNotices({
 export default function MeatMenuPreview({
     menu,
     spotlight = null,
+    spotlights = null,
     soldOutItems = {},
     currentTime = null
 }) {
@@ -1224,11 +1226,12 @@ export default function MeatMenuPreview({
                                 )}
 
                                 {columnIndex === 0 && (
-                                    <PreviewSpotlight
-                                        menu={displayMenu}
-                                        spotlight={spotlight}
-                                        showSpanish={showSpanish}
-                                    />
+                                    <SpotlightRotator
+                                        items={spotlights || (spotlight ? [spotlight] : [])}
+                                        fallback={<PreviewSpotlight menu={displayMenu} spotlight={null} showSpanish={showSpanish} />}
+                                    >
+                                        {(ad) => <PreviewSpotlight menu={displayMenu} spotlight={ad} showSpanish={showSpanish} />}
+                                    </SpotlightRotator>
                                 )}
                             </div>
                         )

@@ -3,133 +3,20 @@ import { collection, onSnapshot } from 'firebase/firestore';
 
 import { db } from '../firebase';
 
-const timestampToMillis = (value) => {
-    if (!value) {
-        return null;
-    }
+import { isSpotlightEligible } from '../utils/menuSpotlightSchedule';
+import useSpotlightSettings from './useSpotlightSettings';
 
-    if (typeof value.toMillis === 'function') {
-        return value.toMillis();
-    }
+const snapshotToSpotlights = (snapshot, scope) => snapshot.docs.map((document) => ({
+    ...document.data(), id: document.id, scope
+}));
 
-    if (typeof value === 'number') {
-        return value;
-    }
-
-    const parsedTime = new Date(value).getTime();
-
-    return Number.isFinite(parsedTime)
-        ? parsedTime
-        : null;
-};
-
-const snapshotToSpotlights = (
-    snapshot,
-    scope
-) =>
-    snapshot.docs.map((snapshotDocument) => ({
-        id: snapshotDocument.id,
-        scope,
-        ...snapshotDocument.data()
-    }));
-
-const isSpotlightAvailable = (
-    spotlight,
-    activeLocation,
-    currentTime,
-    includeScheduledSpotlights
-) => {
-    if (spotlight.enabled === false) {
-        return false;
-    }
-
-    const targetedLocations = Array.isArray(
-        spotlight.targetLocationIds
-    )
-        ? spotlight.targetLocationIds
-        : [];
-
-    if (
-        targetedLocations.length > 0
-        && !targetedLocations.includes(activeLocation)
-    ) {
-        return false;
-    }
-
-    /*
-     * A device preview may display an enabled future Spotlight.
-     * Published menu screens continue to respect its schedule.
-     */
-    if (includeScheduledSpotlights) {
-        return true;
-    }
-
-    const startsAt = timestampToMillis(
-        spotlight.startsAt
-    );
-
-    const endsAt = timestampToMillis(
-        spotlight.endsAt
-    );
-
-    return (
-        (
-            startsAt === null
-            || startsAt <= currentTime
-        )
-        && (
-            endsAt === null
-            || currentTime < endsAt
-        )
-    );
-};
-
-const compareSpotlights = (
-    firstSpotlight,
-    secondSpotlight
-) => {
-    /*
-     * A location-created Spotlight takes precedence over a
-     * globally shared Spotlight.
-     */
-    if (
-        firstSpotlight.scope
-        !== secondSpotlight.scope
-    ) {
-        return firstSpotlight.scope === 'local'
-            ? -1
-            : 1;
-    }
-
-    const firstStart = timestampToMillis(
-        firstSpotlight.startsAt
-    ) || 0;
-
-    const secondStart = timestampToMillis(
-        secondSpotlight.startsAt
-    ) || 0;
-
-    if (firstStart !== secondStart) {
-        return secondStart - firstStart;
-    }
-
-    const firstUpdated = timestampToMillis(
-        firstSpotlight.updatedAt
-    ) || 0;
-
-    const secondUpdated = timestampToMillis(
-        secondSpotlight.updatedAt
-    ) || 0;
-
-    return secondUpdated - firstUpdated;
-};
-
-export default function useMenuSpotlight({
+export function useMenuSpotlights({
     locationId,
     menuId,
     currentTime,
     includeScheduledSpotlights = false
 }) {
+    const { calendarEnabled } = useSpotlightSettings(menuId);
     const [globalState, setGlobalState] = useState(null);
     const [localState, setLocalState] = useState(null);
 
@@ -219,7 +106,7 @@ export default function useMenuSpotlight({
             : [];
 
     if (!Number.isFinite(currentTime)) {
-        return null;
+        return [];
     }
 
     return [
@@ -227,12 +114,17 @@ export default function useMenuSpotlight({
         ...globalSpotlights
     ]
         .filter((spotlight) =>
-            isSpotlightAvailable(
+            isSpotlightEligible(
                 spotlight,
                 locationId,
                 currentTime,
-                includeScheduledSpotlights
+                includeScheduledSpotlights,
+                calendarEnabled
             )
         )
-        .sort(compareSpotlights)[0] || null;
+        .sort((first, second) => `${first.scope}:${first.id}`.localeCompare(`${second.scope}:${second.id}`));
+}
+
+export default function useMenuSpotlight(options) {
+    return useMenuSpotlights(options)[0] || null;
 }

@@ -1,4 +1,4 @@
-import useMenuSpotlight from '../hooks/useMenuSpotlight';
+import { useMenuSpotlights } from '../hooks/useMenuSpotlight';
 
 export default function MenuAvailabilityPreview({
     menu,
@@ -10,7 +10,7 @@ export default function MenuAvailabilityPreview({
     currentTime,
     PreviewComponent
 }) {
-    const activeSpotlight = useMenuSpotlight({
+    const activeSpotlights = useMenuSpotlights({
         locationId,
         menuId,
         currentTime,
@@ -32,7 +32,7 @@ export default function MenuAvailabilityPreview({
                 <div className="absolute inset-0">
                     <PreviewComponent
                         menu={menu}
-                        spotlight={activeSpotlight}
+                        spotlights={activeSpotlights}
                         soldOutItems={soldOutItems}
                         currentTime={currentTime}
                     />

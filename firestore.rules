@@ -168,6 +168,23 @@ service cloud.firestore {
     }
 
 
+    // Per-menu calendar scheduling. Missing settings preserve scheduled playback.
+    match /globalMenuSpotlightSettings/{menuId} {
+      allow read: if isSupportedMenu(menuId);
+      allow create, update: if isSuperAdmin()
+        && isSupportedMenu(menuId)
+        && request.resource.data.keys().hasOnly([
+          'calendarEnabled', 'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.keys().hasAll([
+          'calendarEnabled', 'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.calendarEnabled is bool
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if isSuperAdmin() && isSupportedMenu(menuId);
+    }
+
     // --- PUBLIC TV DISPLAY CONTENT ---
 
     // Only this specific settings document is public.

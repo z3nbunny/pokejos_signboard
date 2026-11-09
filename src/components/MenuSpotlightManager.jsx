@@ -16,6 +16,14 @@ import {
 import { db } from '../firebase';
 import { useAuth } from '../contexts/useAuth';
 import ImageFramingEditor from './ImageFramingEditor';
+import SpotlightCalendar from './SpotlightCalendar';
+import SpotlightScheduleEditor from './SpotlightScheduleEditor';
+import SpotlightSchedulingToggle from './SpotlightSchedulingToggle';
+import useSpotlightSettings from '../hooks/useSpotlightSettings';
+import {
+    DEFAULT_SPOTLIGHT_SECONDS, SPOTLIGHT_TIME_ZONE,
+    formatCentralInput, getSpotlightSeconds, parseCentralInput, validateRecurrence
+} from '../utils/menuSpotlightSchedule';
 
 const LOCATIONS = [
     { id: 'brodie', label: 'Brodie' },
@@ -81,58 +89,21 @@ const normalizeSpotlightImageFraming = (
     )
 });
 
-const createLaborDaySpotlight = (id) => ({
-    id,
-    layoutMode: 'text',
-    imageUrl: '',
-    imageAlt: '',
-    imageFraming: {
-        ...DEFAULT_IMAGE_FRAMING
-    },
-    label: 'Labor Day Weekend',
-    labelEs: 'Especial del Día del Trabajo',
-    title: 'Full Rack of Ribs',
-    titleEs: 'Costillar Completo',
-    description:
-        'Slow-smoked pork ribs, available Labor Day weekend.',
-    descriptionEs:
-        'Costillas de cerdo ahumadas, disponibles durante el fin de semana festivo.',
-    priceCents: 2000,
-    linkedItemId: 'pork_ribs',
-    enabled: true,
-    targetLocationIds: [],
-    startsAtInput: '2026-09-04T00:00',
-    endsAtInput: '2026-09-08T00:00'
+const defaultWeeklyRule = () => ({
+    type: 'weekly', timeZone: SPOTLIGHT_TIME_ZONE,
+    days: [5], startTime: '11:00', endTime: '15:00',
+    startDate: '', endDate: ''
 });
 
-const timestampToInput = (value) => {
-    const date = value?.toDate?.();
-
-    if (!date) {
-        return '';
-    }
-
-    const offsetMilliseconds =
-        date.getTimezoneOffset() * 60000;
-
-    return new Date(
-        date.getTime() - offsetMilliseconds
-    ).toISOString().slice(0, 16);
-};
-
-const inputToTimestamp = (value) => {
-    if (!value) {
-        return null;
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-
-    return Timestamp.fromDate(date);
-};
+const createBlankSpotlight = (id) => ({
+    id, layoutMode: 'text', imageUrl: '', imageAlt: '',
+    imageFraming: { ...DEFAULT_IMAGE_FRAMING },
+    label: '', labelEs: '', title: '', titleEs: '',
+    description: '', descriptionEs: '', priceCents: 0,
+    linkedItemId: '', enabled: false, targetLocationIds: [],
+    startsAtInput: '', endsAtInput: '', scheduleType: 'always',
+    recurrence: defaultWeeklyRule(), displayDurationSeconds: DEFAULT_SPOTLIGHT_SECONDS
+});
 
 const snapshotToSpotlight = (snapshot) => {
     const data = snapshot.data();
@@ -163,12 +134,19 @@ const snapshotToSpotlight = (snapshot) => {
         )
             ? data.targetLocationIds
             : [],
-        startsAtInput: timestampToInput(
-            data.startsAt
-        ),
-        endsAtInput: timestampToInput(
-            data.endsAt
-        )
+        startsAt: data.startsAt ?? null,
+        endsAt: data.endsAt ?? null,
+        startsAtInput: formatCentralInput(data.startsAt),
+        endsAtInput: formatCentralInput(data.endsAt),
+        scheduleType: data.recurrence ? 'weekly'
+            : data.startsAt || data.endsAt ? 'window' : 'always',
+        recurrence: {
+            ...defaultWeeklyRule(), ...data.recurrence,
+            days: Array.isArray(data.recurrence?.days)
+                ? data.recurrence.days.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+                : defaultWeeklyRule().days
+        },
+        displayDurationSeconds: getSpotlightSeconds(data.displayDurationSeconds)
     };
 };
 
@@ -261,16 +239,19 @@ export default function MenuSpotlightManager({
     onPreviewChange
 }) {
     const { currentUser, userData } = useAuth();
+    const { calendarEnabled, ready: settingsReady, error: settingsError } = useSpotlightSettings('meat');
 
     const [spotlights, setSpotlights] =
         useState([]);
     const [selectedId, setSelectedId] =
         useState('');
     const selectedIdRef = useRef('');
-    const [draft, setDraft] = useState(null);
+    const [drafts, setDrafts] = useState({});
+    const draftsRef = useRef({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [dirty, setDirty] = useState(false);
+    const draft = drafts[selectedId] || spotlights.find((ad) => ad.id === selectedId) || null;
+    const dirty = Boolean(drafts[selectedId]);
     const [message, setMessage] = useState('');
 
     useEffect(() => {
@@ -300,30 +281,22 @@ export default function MenuSpotlightManager({
                 setSpotlights(loadedSpotlights);
                 setLoading(false);
 
-                if (loadedSpotlights.length === 0) {
-                    return;
+                // Preserve unsaved edits during listener updates and card switching.
+                if (draftsRef.current[selectedIdRef.current]) return;
+                const selected = loadedSpotlights.find((ad) => ad.id === selectedIdRef.current)
+                    || Object.values(draftsRef.current)[0] || loadedSpotlights[0];
+                if (selected) {
+                    setSelectedId(selected.id);
+                    selectedIdRef.current = selected.id;
+                    onPreviewChange(selected);
+                } else {
+                    const blank = createBlankSpotlight(doc(spotlightCollection).id);
+                    draftsRef.current = { [blank.id]: blank };
+                    setDrafts(draftsRef.current);
+                    setSelectedId(blank.id);
+                    selectedIdRef.current = blank.id;
+                    onPreviewChange(blank);
                 }
-
-                const selectedSpotlight =
-                    loadedSpotlights.find(
-                        (spotlight) =>
-                            spotlight.id
-                            === selectedIdRef.current
-                    )
-                    || loadedSpotlights.find(
-                        (spotlight) =>
-                            spotlight.enabled
-                    )
-                    || loadedSpotlights[0];
-
-                setSelectedId(
-                    selectedSpotlight.id
-                );
-                selectedIdRef.current =
-                    selectedSpotlight.id;
-                setDraft(selectedSpotlight);
-                setDirty(false);
-                onPreviewChange(selectedSpotlight);
             },
             (error) => {
                 console.error(
@@ -344,67 +317,43 @@ export default function MenuSpotlightManager({
     ]);
 
     const updateDraft = (field, value) => {
-        setDraft((currentDraft) => {
-            if (!currentDraft) {
-                return currentDraft;
-            }
-
-            const nextDraft = {
-                ...currentDraft,
-                [field]: value
-            };
-
-            onPreviewChange(nextDraft);
-
-            return nextDraft;
-        });
-
-        setDirty(true);
+        if (!draft || saving) return;
+        const next = { ...draft, [field]: value };
+        draftsRef.current = { ...draftsRef.current, [draft.id]: next };
+        setDrafts(draftsRef.current);
+        onPreviewChange(next);
         setMessage('');
     };
 
     const handleNewSpotlight = () => {
-        const spotlightRef = doc(
-            collection(
-                db,
-                'globalMenuSpotlights',
-                'meat',
-                'items'
-            )
-        );
-
-        const nextDraft =
-            createLaborDaySpotlight(
-                spotlightRef.id
-            );
-
-        setSelectedId(nextDraft.id);
-        selectedIdRef.current = nextDraft.id;
-        setDraft(nextDraft);
-        setDirty(true);
-        setMessage(
-            'New unsaved Spotlight created.'
-        );
-        onPreviewChange(nextDraft);
+        const next = createBlankSpotlight(doc(collection(
+            db, 'globalMenuSpotlights', 'meat', 'items'
+        )).id);
+        draftsRef.current = { ...draftsRef.current, [next.id]: next };
+        setDrafts(draftsRef.current);
+        setSelectedId(next.id);
+        selectedIdRef.current = next.id;
+        setMessage('Blank ad added. Enable and save it when ready.');
+        onPreviewChange(next);
     };
 
-    const handleSelect = (spotlightId) => {
-        const selectedSpotlight =
-            spotlights.find(
-                (spotlight) =>
-                    spotlight.id === spotlightId
-            );
-
-        if (!selectedSpotlight) {
-            return;
-        }
-
-        setSelectedId(spotlightId);
-        selectedIdRef.current = spotlightId;
-        setDraft(selectedSpotlight);
-        setDirty(false);
+    const handleSelect = (id) => {
+        const selected = draftsRef.current[id] || spotlights.find((ad) => ad.id === id);
+        if (!selected || saving) return;
+        setSelectedId(id);
+        selectedIdRef.current = id;
         setMessage('');
-        onPreviewChange(selectedSpotlight);
+        onPreviewChange(selected);
+    };
+
+    const useCalendarDate = (date) => {
+        if (!draft || saving) return;
+        const next = { ...draft, scheduleType: 'window',
+            startsAtInput: `${date}T11:00`, endsAtInput: `${date}T15:00` };
+        draftsRef.current = { ...draftsRef.current, [draft.id]: next };
+        setDrafts(draftsRef.current);
+        onPreviewChange(next);
+        setMessage('Date filled in the editor. Save this ad to apply it.');
     };
 
     const handleLocationToggle = (
@@ -437,6 +386,7 @@ export default function MenuSpotlightManager({
             userData?.role !== 'super_admin'
             || !currentUser
             || !draft
+            || !settingsReady
         ) {
             return;
         }
@@ -482,22 +432,47 @@ export default function MenuSpotlightManager({
             return;
         }
 
-        const startsAt = inputToTimestamp(
-            draft.startsAtInput
-        );
-        const endsAt = inputToTimestamp(
-            draft.endsAtInput
-        );
-
-        if (
-            startsAt
-            && endsAt
-            && endsAt.toMillis()
-            <= startsAt.toMillis()
-        ) {
-            setMessage(
-                'Spotlight end time must be after its start time.'
-            );
+        const seconds = Number(draft.displayDurationSeconds);
+        if (!Number.isInteger(seconds) || seconds < 5 || seconds > 300) {
+            setMessage('Display duration must be a whole number from 5 to 300 seconds.');
+            return;
+        }
+        let startsAt = null;
+        let endsAt = null;
+        let recurrence = null;
+        let scheduleType = draft.scheduleType;
+        let startsAtInput = draft.startsAtInput;
+        let endsAtInput = draft.endsAtInput;
+        try {
+            if (!calendarEnabled) {
+                // Hidden controls must never block a content save or erase a saved schedule.
+                const savedSchedule = spotlights.find((ad) => ad.id === draft.id);
+                scheduleType = savedSchedule?.scheduleType || 'always';
+                startsAt = savedSchedule?.startsAt ?? null;
+                endsAt = savedSchedule?.endsAt ?? null;
+                recurrence = scheduleType === 'weekly' ? savedSchedule.recurrence : null;
+                startsAtInput = savedSchedule?.startsAtInput || '';
+                endsAtInput = savedSchedule?.endsAtInput || '';
+            } else if (draft.scheduleType === 'window') {
+                if (!draft.startsAtInput && !draft.endsAtInput) {
+                    throw new Error('Choose at least one date/time limit, or use Whenever enabled.');
+                }
+                const start = parseCentralInput(draft.startsAtInput);
+                const end = parseCentralInput(draft.endsAtInput);
+                if (start !== null && end !== null && end <= start) {
+                    throw new Error('Spotlight end time must be after its start time.');
+                }
+                startsAt = start === null ? null : Timestamp.fromDate(new Date(start));
+                endsAt = end === null ? null : Timestamp.fromDate(new Date(end));
+            } else if (draft.scheduleType === 'weekly') {
+                recurrence = { ...draft.recurrence, type: 'weekly', timeZone: SPOTLIGHT_TIME_ZONE };
+                const error = validateRecurrence(recurrence);
+                if (error) throw new Error(error);
+            } else if (draft.scheduleType !== 'always') {
+                throw new Error('Choose a schedule type.');
+            }
+        } catch (error) {
+            setMessage(error.message);
             return;
         }
 
@@ -547,15 +522,21 @@ export default function MenuSpotlightManager({
                         draft.targetLocationIds,
                     startsAt,
                     endsAt,
+                    recurrence,
+                    displayDurationSeconds: seconds,
                     updatedAt: serverTimestamp(),
                     updatedBy: currentUser.uid
                 }
             );
 
-            setDirty(false);
-            setMessage(
-                'Spotlight saved successfully.'
-            );
+            const saved = { ...draft, startsAt, endsAt, scheduleType, startsAtInput, endsAtInput,
+                recurrence: recurrence || defaultWeeklyRule(), displayDurationSeconds: seconds };
+            setSpotlights((ads) => [...ads.filter((ad) => ad.id !== saved.id), saved]);
+            const nextDrafts = { ...draftsRef.current };
+            delete nextDrafts[draft.id];
+            draftsRef.current = nextDrafts;
+            setDrafts(nextDrafts);
+            setMessage('Spotlight saved successfully.');
         } catch (error) {
             console.error(
                 'Unable to save menu Spotlight:',
@@ -570,49 +551,32 @@ export default function MenuSpotlightManager({
     };
 
     const handleDelete = async () => {
-        if (
-            !draft
-            || !spotlights.some(
-                (spotlight) =>
-                    spotlight.id === draft.id
-            )
-        ) {
-            return;
-        }
-
-        const confirmed = globalThis.confirm(
-            `Delete the Spotlight "${draft.title}"?`
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
+        if (!draft || saving) return;
+        const saved = spotlights.some((ad) => ad.id === draft.id);
+        if (saved && !globalThis.confirm(`Delete the Spotlight "${draft.title}"?`)) return;
+        setSaving(true);
         try {
-            await deleteDoc(
-                doc(
-                    db,
-                    'globalMenuSpotlights',
-                    'meat',
-                    'items',
-                    draft.id
-                )
-            );
-
-            setSelectedId('');
-            selectedIdRef.current = '';
-            setDraft(null);
-            setDirty(false);
-            setMessage('Spotlight deleted.');
-            onPreviewChange(null);
+            if (saved) await deleteDoc(doc(db, 'globalMenuSpotlights', 'meat', 'items', draft.id));
+            const remaining = spotlights.filter((ad) => ad.id !== draft.id);
+            const nextDrafts = { ...draftsRef.current };
+            delete nextDrafts[draft.id];
+            let next = Object.values(nextDrafts)[0] || remaining[0];
+            if (!next) {
+                next = createBlankSpotlight(doc(collection(db, 'globalMenuSpotlights', 'meat', 'items')).id);
+                nextDrafts[next.id] = next;
+            }
+            draftsRef.current = nextDrafts;
+            setDrafts(nextDrafts);
+            setSpotlights(remaining);
+            setSelectedId(next.id);
+            selectedIdRef.current = next.id;
+            onPreviewChange(next);
+            setMessage(saved ? 'Spotlight deleted.' : 'Unsaved ad removed.');
         } catch (error) {
-            console.error(
-                'Unable to delete menu Spotlight:',
-                error
-            );
-            setMessage(
-                'The Spotlight could not be deleted.'
-            );
+            console.error('Unable to delete menu Spotlight:', error);
+            setMessage('The Spotlight could not be deleted.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -635,6 +599,14 @@ export default function MenuSpotlightManager({
         first.name.localeCompare(second.name)
     );
 
+    const cards = [...new Map([
+        ...spotlights.map((ad) => [ad.id, ad]),
+        ...Object.values(drafts).map((ad) => [ad.id, ad])
+    ]).values()];
+    const scheduledAds = spotlights.map((ad) => ({ ...ad,
+        recurrence: ad.scheduleType === 'weekly' ? ad.recurrence : null
+    }));
+
     return (
         <section className="bg-bg border border-border rounded-3xl p-5 space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -650,13 +622,7 @@ export default function MenuSpotlightManager({
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={handleNewSpotlight}
-                    className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-full text-xs font-bold uppercase tracking-wider"
-                >
-                    + New Spotlight
-                </button>
+
             </div>
 
             {loading ? (
@@ -665,47 +631,56 @@ export default function MenuSpotlightManager({
                 </p>
             ) : (
                 <>
-                    {spotlights.length > 0 && (
-                        <div>
-                            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                Existing Spotlight
-                            </label>
-
-                            <select
-                                value={selectedId}
-                                onChange={(event) =>
-                                    handleSelect(
-                                        event.target.value
-                                    )
-                                }
-                                className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
-                            >
-                                {spotlights.map(
-                                    (spotlight) => (
-                                        <option
-                                            key={spotlight.id}
-                                            value={spotlight.id}
-                                        >
-                                            {spotlight.title}
-                                            {spotlight.enabled
-                                                ? ' — Enabled'
-                                                : ' — Disabled'}
-                                        </option>
-                                    )
-                                )}
-                            </select>
-                        </div>
+                    <div aria-label="Spotlight ads" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                        {cards.map((card, index) => (
+                            <button key={card.id} type="button" disabled={saving}
+                                aria-label={`Edit ad ${index + 1}: ${card.title || 'Blank ad'}`}
+                                aria-pressed={selectedId === card.id} onClick={() => handleSelect(card.id)}
+                                className={`min-w-0 overflow-hidden rounded-2xl border-2 bg-surface text-left transition-colors disabled:opacity-50 ${selectedId === card.id
+                                    ? 'border-blue-500 ring-4 ring-blue-500/20 shadow-lg'
+                                    : 'border-border hover:border-blue-400'}`}>
+                                <div className="relative flex aspect-[2/1] items-center justify-center overflow-hidden bg-black p-3 text-center text-white">
+                                    {card.layoutMode !== 'text' && card.imageUrl ? (
+                                        <img src={card.imageUrl} alt={card.imageAlt || card.title || 'Ad preview'}
+                                            className="absolute inset-0 h-full w-full object-cover"
+                                            style={{ objectPosition: `${card.imageFraming.x}% ${card.imageFraming.y}%`,
+                                                transform: `scale(${card.imageFraming.zoom})`,
+                                                transformOrigin: `${card.imageFraming.x}% ${card.imageFraming.y}%` }} />
+                                    ) : <span className="text-sm font-black">{card.title || 'Blank ad'}</span>}
+                                    {card.layoutMode === 'image_text' && card.imageUrl && (
+                                        <span className="relative rounded-lg bg-black/70 px-3 py-2 text-sm font-black">{card.title || 'Add a headline'}</span>
+                                    )}
+                                </div>
+                                <div className="space-y-1 p-3">
+                                    <span className="block truncate text-sm font-bold">{card.title || `Ad ${index + 1}`}</span>
+                                    <span className="block text-xs text-text-secondary">{drafts[card.id] ? 'Unsaved changes'
+                                        : card.enabled ? 'Enabled · follows schedule' : 'Disabled'} · {card.displayDurationSeconds}s</span>
+                                </div>
+                            </button>
+                        ))}
+                        <button type="button" disabled={saving} onClick={handleNewSpotlight} aria-label="Add Spotlight ad"
+                            className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border p-5 text-text-secondary hover:border-blue-500 hover:text-blue-500 disabled:opacity-50">
+                            <span aria-hidden="true" className="text-4xl font-light">+</span>
+                            <span className="text-sm font-bold">Add ad</span>
+                        </button>
+                    </div>
+                    <p className="text-xs text-text-secondary">Select an ad to edit it below. Unsaved edits stay while you switch ads;
+                        save each ad before leaving this page. Eligible specials play in shuffled cycles without immediate repeats.</p>
+                    <SpotlightSchedulingToggle menuId="meat" calendarEnabled={calendarEnabled}
+                        ready={settingsReady} error={settingsError} disabled={saving} />
+                    {calendarEnabled && settingsReady && (
+                        <SpotlightCalendar ads={scheduledAds} onSelect={handleSelect} onUseDate={useCalendarDate}
+                            disabled={saving || !draft} />
                     )}
 
                     {!draft ? (
                         <div className="border border-dashed border-border rounded-2xl p-8 text-center">
                             <p className="text-sm text-text-secondary">
-                                No Spotlights exist yet. Create the Labor
-                                Day special to begin.
+                                Select an ad to begin.
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-5">
+                        <fieldset key={draft.id} disabled={saving} className="space-y-5">
                             <div className="space-y-3">
                                 <div>
                                     <h4 className="text-[11px] uppercase tracking-wider text-text-secondary font-bold">
@@ -907,60 +882,12 @@ export default function MenuSpotlightManager({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                        Special Price
-                                    </label>
-
-                                    <SpotlightPriceInput
-                                        priceCents={draft.priceCents}
-                                        onChange={(priceCents) =>
-                                            updateDraft(
-                                                'priceCents',
-                                                priceCents
-                                            )
-                                        }
-                                        disabled={saving}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                        Starts
-                                    </label>
-
-                                    <input
-                                        type="datetime-local"
-                                        value={draft.startsAtInput}
-                                        onChange={(event) =>
-                                            updateDraft(
-                                                'startsAtInput',
-                                                event.target.value
-                                            )
-                                        }
-                                        className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                                        Ends
-                                    </label>
-
-                                    <input
-                                        type="datetime-local"
-                                        value={draft.endsAtInput}
-                                        onChange={(event) =>
-                                            updateDraft(
-                                                'endsAtInput',
-                                                event.target.value
-                                            )
-                                        }
-                                        className="w-full bg-surface border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none"
-                                    />
-                                </div>
+                            <div className="max-w-sm">
+                                <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">Special Price</label>
+                                <SpotlightPriceInput priceCents={draft.priceCents}
+                                    onChange={(value) => updateDraft('priceCents', value)} disabled={saving} />
                             </div>
+                            <SpotlightScheduleEditor draft={draft} onChange={updateDraft} calendarEnabled={calendarEnabled} />
 
                             <div>
                                 <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
@@ -1060,7 +987,7 @@ export default function MenuSpotlightManager({
                                 <button
                                     type="button"
                                     onClick={handleSave}
-                                    disabled={!dirty || saving}
+                                    disabled={!dirty || saving || !settingsReady}
                                     className="px-6 py-2.5 bg-accent hover:bg-accent-hover disabled:opacity-40 text-white rounded-full text-xs font-bold uppercase tracking-wider"
                                 >
                                     {saving
@@ -1071,20 +998,13 @@ export default function MenuSpotlightManager({
                                 <button
                                     type="button"
                                     onClick={handleDelete}
-                                    disabled={
-                                        saving
-                                        || !spotlights.some(
-                                            (spotlight) =>
-                                                spotlight.id
-                                                === draft.id
-                                        )
-                                    }
+                                    disabled={saving}
                                     className="px-5 py-2.5 bg-surface hover:bg-red-50 disabled:opacity-40 border border-border text-danger rounded-full text-xs font-bold uppercase tracking-wider"
                                 >
                                     Delete Spotlight
                                 </button>
                             </div>
-                        </div>
+                        </fieldset>
                     )}
                 </>
             )}
