@@ -19,6 +19,10 @@ import {
 import MenuSoldOutLabel from './MenuSoldOutLabel';
 
 const SIDES_TEXT_CLASSES = {
+    sectionTitle:
+        MENU_TEXT_CLASSES.sectionTitle
+        + ' leading-[1.05]',
+
     itemName:
         MENU_TEXT_CLASSES.itemName
         + ' leading-[1.04]',
@@ -546,7 +550,10 @@ function CompactBeerGroup({
         <section className="border-t border-[#f4c542]/32 pt-[0.5cqw]">
             <h3
                 style={DISPLAY_FONT_STYLE}
-                className="mb-[0.62cqw] text-center text-[1.55cqw] leading-[1.02] uppercase tracking-[0.025em] text-[#f4c542]"
+                className={
+                    SIDES_TEXT_CLASSES.sectionTitle
+                    + ' mb-[0.62cqw] text-center'
+                }
             >
                 BEERS
 
@@ -587,8 +594,8 @@ function CompactBeerGroup({
 
                             <span
                                 className={`${SIDES_TEXT_CLASSES.price} ${item.soldOut
-                                        ? 'line-through opacity-60'
-                                        : ''
+                                    ? 'line-through opacity-60'
+                                    : ''
                                     }`}
                             >
                                 {formatPrice(item.priceCents)}
@@ -957,7 +964,7 @@ function MenuSection({
                 <div className="flex flex-wrap items-center justify-center gap-x-[0.42cqw] gap-y-[0.12cqw]">
                     <h1
                         style={DISPLAY_FONT_STYLE}
-                        className="text-[1.55cqw] leading-[1.02] uppercase tracking-[0.025em] text-[#f4c542]"
+                        className={SIDES_TEXT_CLASSES.sectionTitle}
                     >
                         {section.title}
                     </h1>
@@ -970,7 +977,7 @@ function MenuSection({
 
                             <h1
                                 style={DISPLAY_FONT_STYLE}
-                                className="text-[1.55cqw] leading-[1.02] uppercase tracking-[0.025em] text-[#f4c542]"
+                                className={SIDES_TEXT_CLASSES.sectionTitle}
                             >
                                 {section.titleEs}
                             </h1>
