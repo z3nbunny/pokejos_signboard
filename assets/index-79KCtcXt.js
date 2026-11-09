@@ -163,7 +163,7 @@ You can still use Discard Changes before saving.`)&&(l===t.id&&u(null),pe(n=>({.
                                 grid
                                 gap-[0.52cqw]
                                 ${r&&n>0?`border-t border-[#f4c542]/25 pt-[0.62cqw]`:``}
-                            `,style:{gridTemplateColumns:`repeat(${e.length}, minmax(0, 1fr))`},children:e.map(e=>(0,Z.jsxs)(`div`,{className:`flex flex-col text-center leading-none `+bO.supporting,children:[(0,Z.jsxs)(`p`,{className:`text-[0.82cqw] font-bold uppercase tracking-[0.04em] leading-[1.1] text-white`,children:[e.label,!r&&e.label&&e.labelEs?` | `:``,!r&&e.labelEs]}),e.serves&&(0,Z.jsxs)(`p`,{className:`mt-[0.24cqw] font-medium leading-[1.1] text-white`,children:[r||!t?`Serves `:`Serves / Rinde `,e.serves]}),(0,Z.jsx)(`p`,{className:`
+                            `,style:{gridTemplateColumns:`repeat(${e.length}, minmax(0, 1fr))`},children:e.map(e=>(0,Z.jsxs)(`div`,{className:`flex flex-col text-center leading-none `+bO.supporting,children:[(0,Z.jsxs)(`p`,{className:`font-bold uppercase tracking-[0.04em] leading-[1.1] text-white`,children:[e.label,!r&&e.label&&e.labelEs?` | `:``,!r&&e.labelEs]}),e.serves&&(0,Z.jsxs)(`p`,{className:`mt-[0.24cqw] font-medium leading-[1.1] text-white`,children:[r||!t?`Serves `:`Serves / Rinde `,e.serves]}),(0,Z.jsx)(`p`,{className:`
                                                 mt-auto
                                                 pt-[0.3cqw]
                                                 font-black
