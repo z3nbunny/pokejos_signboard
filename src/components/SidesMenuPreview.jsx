@@ -567,7 +567,7 @@ function CompactBeerGroup({
                 )}
             </h3>
 
-            <div className="space-y-[0.72cqw]">
+            <div className="space-y-[0.3cqw]">
                 {visibleItems.map((item) => (
                     <div key={item.id} className="min-w-0">
                         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-[0.7cqw]">
@@ -724,10 +724,6 @@ function PricingGroup({
         (priceRow) => priceRow.length > 0
     );
 
-    const titleSizeClass = isSidesPricing
-        ? 'text-[1.02cqw]'
-        : 'text-[0.86cqw]';
-
     return (
         <section
             className={`
@@ -744,7 +740,7 @@ function PricingGroup({
             <div className="flex items-center justify-center gap-[0.4cqw] text-center">
                 <h2
                     style={DISPLAY_FONT_STYLE}
-                    className={`${titleSizeClass} leading-none uppercase tracking-[0.025em] text-[#f4c542]`}
+                    className={SIDES_TEXT_CLASSES.sectionTitle}
                 >
                     {pricingGroup.title}
                 </h2>
@@ -757,7 +753,7 @@ function PricingGroup({
 
                         <h2
                             style={DISPLAY_FONT_STYLE}
-                            className={`${titleSizeClass} leading-none uppercase tracking-[0.025em] text-[#f4c542]`}
+                            className={SIDES_TEXT_CLASSES.sectionTitle}
                         >
                             {pricingGroup.titleEs}
                         </h2>
@@ -794,19 +790,13 @@ function PricingGroup({
                                 (priceOption) => (
                                     <div
                                         key={priceOption.id}
-                                        className="flex flex-col text-center leading-none"
+                                        className={
+                                            'flex flex-col text-center leading-none '
+                                            + MENU_TEXT_CLASSES.supporting
+                                        }
                                     >
                                         <p
-                                            className={`
-                                                font-bold
-                                                uppercase
-                                                tracking-[0.04em]
-                                                text-white/72
-                                                ${isSidesPricing
-                                                    ? 'text-[0.72cqw]'
-                                                    : 'text-[0.56cqw]'
-                                                }
-                                            `}
+                                            className="font-bold uppercase tracking-[0.04em] leading-[1.1] text-white"
                                         >
                                             {priceOption.label}
 
@@ -822,18 +812,7 @@ function PricingGroup({
 
                                         {priceOption.serves && (
                                             <p
-                                                className={`
-                                                    mt-[0.24cqw]
-                                                    leading-none
-                                                    font-bold
-                                                    uppercase
-                                                    tracking-[0.035em]
-                                                    text-white/62
-                                                    ${isSidesPricing
-                                                        ? 'text-[0.62cqw]'
-                                                        : 'text-[0.5cqw]'
-                                                    }
-                                                `}
+                                                className="mt-[0.24cqw] font-medium leading-[1.1] text-white"
                                             >
                                                 {isSidesPricing || !showSpanish
                                                     ? 'Serves '
