@@ -566,7 +566,7 @@ function CompactBeerGroup({
                         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-[0.7cqw]">
                             <div className="flex flex-wrap items-center gap-[0.2cqw]">
                                 <span
-                                    className={`text-[1.02cqw] leading-none font-black uppercase text-white ${item.soldOut
+                                    className={`${SIDES_TEXT_CLASSES.itemName} ${item.soldOut
                                         ? 'line-through opacity-60'
                                         : ''
                                         }`}
@@ -586,9 +586,9 @@ function CompactBeerGroup({
                             </div>
 
                             <span
-                                className={`text-[1.02cqw] leading-none font-black text-[#f4c542] ${item.soldOut
-                                    ? 'line-through opacity-60'
-                                    : ''
+                                className={`${SIDES_TEXT_CLASSES.price} ${item.soldOut
+                                        ? 'line-through opacity-60'
+                                        : ''
                                     }`}
                             >
                                 {formatPrice(item.priceCents)}
