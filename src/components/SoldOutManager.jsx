@@ -456,7 +456,7 @@ function SoldOutMenuPanel({
             () => {
                 setCurrentTime(Date.now());
             },
-            60000
+            1000
         );
 
         return () => {
