@@ -53,7 +53,7 @@ const SECTION_ITEM_SPACING_CLASSES = {
     cold_sides: 'space-y-[1.55cqw]',
     desserts: 'space-y-[1.32cqw]',
     bbq_sauces: 'space-y-[1.45cqw]',
-    drinks: 'space-y-[1.08cqw]'
+    drinks: 'space-y-[0.3cqw]'
 };
 
 const COMPACT_BEER_ITEM_IDS = new Set([
@@ -893,6 +893,14 @@ function MenuSection({
 
     const firstBeerItemId =
         beerItems[0]?.id || '';
+    const contentAnchorId = section.id === 'drinks'
+        ? items
+            .filter(
+                (item) =>
+                    !COMPACT_BEER_ITEM_IDS.has(item.id)
+            )
+            .at(-1)?.id || ''
+        : afterItemId;
 
     const itemSpacingClass =
         SECTION_ITEM_SPACING_CLASSES[
@@ -1056,7 +1064,7 @@ function MenuSection({
                                 ))}
 
                             {afterItemContent
-                                && afterItemId === item.id
+                                && contentAnchorId === item.id
                                 && afterItemContent}
                         </div>
                     );
@@ -1312,11 +1320,6 @@ export default function SidesMenuPreview({
                                         soldOutItems={soldOutItems}
                                         currentTime={currentTime}
                                         showSpanish={showSpanish}
-                                        afterItemId={
-                                            section.id === 'drinks'
-                                                ? 'milk'
-                                                : ''
-                                        }
                                         afterItemContent={
                                             section.id === 'drinks'
                                                 ? (
@@ -1355,14 +1358,26 @@ export default function SidesMenuPreview({
                     </main>
                 )}
 
-                <footer className="shrink-0 mt-[0.62cqw] border-t border-[#f4c542]/38 pt-[0.34cqw] space-y-[0.22cqw]">
-                    <DietaryLegend
-                        showSpanish={showSpanish}
-                    />
-                    <AllergenNotice
-                        menu={displayMenu}
-                        showSpanish={showSpanish}
-                    />
+                <footer className="shrink-0 mt-[0.62cqw] pt-[0.34cqw] flex items-center justify-center gap-[1cqw]">
+                    <div className="shrink-0">
+                        <DietaryLegend
+                            showSpanish={showSpanish}
+                        />
+                    </div>
+
+                    <span
+                        aria-hidden="true"
+                        className="shrink-0 self-center text-[0.7cqw] leading-none text-white/40"
+                    >
+                        |
+                    </span>
+
+                    <div className="min-w-0">
+                        <AllergenNotice
+                            menu={displayMenu}
+                            showSpanish={showSpanish}
+                        />
+                    </div>
                 </footer>
             </div>
         </div>
