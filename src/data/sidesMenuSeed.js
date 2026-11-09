@@ -32,7 +32,7 @@ const createSideAndDessertPrices = () => [
     {
         id: 'half_gallon',
         label: '1/2 gallon',
-        labelEs: 'Medio galón',
+        labelEs: '1/2 galón',
         priceCents: 2400,
         serves: '10-12'
     },
@@ -60,8 +60,8 @@ const createSaucePrices = () => [
     },
     {
         id: 'half_gallon',
-        label: 'Half gallon',
-        labelEs: 'Medio galón',
+        label: '1/2 gallon',
+        labelEs: '1/2 galón',
         priceCents: 1400
     },
     {
