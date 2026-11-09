@@ -57,7 +57,7 @@ const SECTION_ITEM_SPACING_CLASSES = {
     cold_sides: 'space-y-[1.55cqw]',
     desserts: 'space-y-[1.32cqw]',
     bbq_sauces: 'space-y-[1.45cqw]',
-    drinks: 'space-y-[0.3cqw]'
+    drinks: 'space-y-[0.0cqw]'
 };
 
 const COMPACT_BEER_ITEM_IDS = new Set([
