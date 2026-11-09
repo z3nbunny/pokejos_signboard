@@ -839,9 +839,9 @@ function PreviewSpotlight({
         : null;
 
     const displayedSpotlight = spotlight || {
-        layoutMode: 'text',
-        imageUrl: '',
-        imageAlt: '',
+        layoutMode: 'image_text',
+        imageUrl: 'https://lh3.googleusercontent.com/d/1-zCyqTXLkpQrbExJDsvssai2SaBA8jn7',
+        imageAlt: 'Loaded baked potato',
         imageFraming: {
             zoom: 1,
             x: 50,
