@@ -1095,12 +1095,9 @@ function PreviewSpotlight({
                                 )}
                         </div>
 
-                        {Number.isFinite(
-                            Number(
-                                displayedSpotlight
-                                    .priceCents
-                            )
-                        ) && (
+                        {Number.isInteger(displayedSpotlight.priceCents)
+                            && displayedSpotlight.priceCents >= 0
+                            && (
                                 <span
                                     className={
                                         'shrink-0 '

@@ -99,7 +99,7 @@ const createBlankSpotlight = (id) => ({
     id, layoutMode: 'text', imageUrl: '', imageAlt: '',
     imageFraming: { ...DEFAULT_IMAGE_FRAMING },
     label: '', labelEs: '', title: '', titleEs: '',
-    description: '', descriptionEs: '', priceCents: 0,
+    description: '', descriptionEs: '', priceCents: null,
     linkedItemId: '', enabled: false, targetLocationIds: [],
     startsAtInput: '', endsAtInput: '', scheduleType: 'always',
     recurrence: defaultWeeklyRule(), displayDurationSeconds: DEFAULT_SPOTLIGHT_SECONDS
@@ -126,7 +126,12 @@ const snapshotToSpotlight = (snapshot) => {
         titleEs: data.titleEs || '',
         description: data.description || '',
         descriptionEs: data.descriptionEs || '',
-        priceCents: Number(data.priceCents || 0),
+        priceCents:
+            data.priceCents === null
+                || data.priceCents === undefined
+                || data.priceCents === ''
+                ? null
+                : Number(data.priceCents),
         linkedItemId: data.linkedItemId || '',
         enabled: data.enabled !== false,
         targetLocationIds: Array.isArray(
@@ -138,8 +143,13 @@ const snapshotToSpotlight = (snapshot) => {
         endsAt: data.endsAt ?? null,
         startsAtInput: formatCentralInput(data.startsAt),
         endsAtInput: formatCentralInput(data.endsAt),
-        scheduleType: data.recurrence ? 'weekly'
-            : data.startsAt || data.endsAt ? 'window' : 'always',
+        scheduleType: data.recurrence?.allDay === true
+            ? 'daily'
+            : data.recurrence
+                ? 'weekly'
+                : data.startsAt || data.endsAt
+                    ? 'window'
+                    : 'always',
         recurrence: {
             ...defaultWeeklyRule(), ...data.recurrence,
             days: Array.isArray(data.recurrence?.days)
@@ -156,7 +166,9 @@ function SpotlightPriceInput({
     disabled
 }) {
     const formatPrice = (cents) =>
-        (Number(cents || 0) / 100).toFixed(2);
+        cents === null || cents === undefined || cents === ''
+            ? ''
+            : (Number(cents) / 100).toFixed(2);
 
     const [displayValue, setDisplayValue] =
         useState(formatPrice(priceCents));
@@ -166,12 +178,16 @@ function SpotlightPriceInput({
 
     const finishEditing = () => {
         setIsEditing(false);
+        if (displayValue.trim() === '') {
+            onChange(null);
+            setDisplayValue('');
+            return;
+        }
 
         const numericValue = Number(displayValue);
 
         if (
-            displayValue.trim() === ''
-            || !Number.isFinite(numericValue)
+            !Number.isFinite(numericValue)
             || numericValue < 0
         ) {
             setDisplayValue(
@@ -348,8 +364,10 @@ export default function MenuSpotlightManager({
 
     const useCalendarDate = (date) => {
         if (!draft || saving) return;
-        const next = { ...draft, scheduleType: 'window',
-            startsAtInput: `${date}T11:00`, endsAtInput: `${date}T15:00` };
+        const next = {
+            ...draft, scheduleType: 'window',
+            startsAtInput: `${date}T11:00`, endsAtInput: `${date}T15:00`
+        };
         draftsRef.current = { ...draftsRef.current, [draft.id]: next };
         setDrafts(draftsRef.current);
         onPreviewChange(next);
@@ -423,8 +441,11 @@ export default function MenuSpotlightManager({
         }
 
         if (
-            !Number.isInteger(draft.priceCents)
-            || draft.priceCents < 0
+            draft.priceCents !== null
+            && (
+                !Number.isInteger(draft.priceCents)
+                || draft.priceCents < 0
+            )
         ) {
             setMessage(
                 'Spotlight price must be valid.'
@@ -444,13 +465,19 @@ export default function MenuSpotlightManager({
         let startsAtInput = draft.startsAtInput;
         let endsAtInput = draft.endsAtInput;
         try {
-            if (!calendarEnabled) {
+            if (!calendarEnabled && draft.scheduleType !== 'daily') {
                 // Hidden controls must never block a content save or erase a saved schedule.
-                const savedSchedule = spotlights.find((ad) => ad.id === draft.id);
+                const savedSchedule = spotlights.find(
+                    (ad) =>
+                        ad.id === draft.id
+                        && ad.scheduleType !== 'daily'
+                );
                 scheduleType = savedSchedule?.scheduleType || 'always';
                 startsAt = savedSchedule?.startsAt ?? null;
                 endsAt = savedSchedule?.endsAt ?? null;
-                recurrence = scheduleType === 'weekly' ? savedSchedule.recurrence : null;
+                recurrence = ['weekly', 'daily'].includes(scheduleType)
+                    ? savedSchedule.recurrence
+                    : null;
                 startsAtInput = savedSchedule?.startsAtInput || '';
                 endsAtInput = savedSchedule?.endsAtInput || '';
             } else if (draft.scheduleType === 'window') {
@@ -464,8 +491,23 @@ export default function MenuSpotlightManager({
                 }
                 startsAt = start === null ? null : Timestamp.fromDate(new Date(start));
                 endsAt = end === null ? null : Timestamp.fromDate(new Date(end));
-            } else if (draft.scheduleType === 'weekly') {
-                recurrence = { ...draft.recurrence, type: 'weekly', timeZone: SPOTLIGHT_TIME_ZONE };
+            } else if (['weekly', 'daily'].includes(draft.scheduleType)) {
+                const isDailySpecial = draft.scheduleType === 'daily';
+
+                recurrence = {
+                    ...draft.recurrence,
+                    type: 'weekly',
+                    timeZone: SPOTLIGHT_TIME_ZONE,
+                    allDay: isDailySpecial,
+                    ...(isDailySpecial
+                        ? {
+                            days: [draft.recurrence.days[0]],
+                            startDate: '',
+                            endDate: ''
+                        }
+                        : {})
+                };
+
                 const error = validateRecurrence(recurrence);
                 if (error) throw new Error(error);
             } else if (draft.scheduleType !== 'always') {
@@ -529,8 +571,10 @@ export default function MenuSpotlightManager({
                 }
             );
 
-            const saved = { ...draft, startsAt, endsAt, scheduleType, startsAtInput, endsAtInput,
-                recurrence: recurrence || defaultWeeklyRule(), displayDurationSeconds: seconds };
+            const saved = {
+                ...draft, startsAt, endsAt, scheduleType, startsAtInput, endsAtInput,
+                recurrence: recurrence || defaultWeeklyRule(), displayDurationSeconds: seconds
+            };
             setSpotlights((ads) => [...ads.filter((ad) => ad.id !== saved.id), saved]);
             const nextDrafts = { ...draftsRef.current };
             delete nextDrafts[draft.id];
@@ -603,8 +647,11 @@ export default function MenuSpotlightManager({
         ...spotlights.map((ad) => [ad.id, ad]),
         ...Object.values(drafts).map((ad) => [ad.id, ad])
     ]).values()];
-    const scheduledAds = spotlights.map((ad) => ({ ...ad,
-        recurrence: ad.scheduleType === 'weekly' ? ad.recurrence : null
+    const scheduledAds = spotlights.map((ad) => ({
+        ...ad,
+        recurrence: ['weekly', 'daily'].includes(ad.scheduleType)
+            ? ad.recurrence
+            : null
     }));
 
     return (
@@ -643,9 +690,11 @@ export default function MenuSpotlightManager({
                                     {card.layoutMode !== 'text' && card.imageUrl ? (
                                         <img src={card.imageUrl} alt={card.imageAlt || card.title || 'Ad preview'}
                                             className="absolute inset-0 h-full w-full object-cover"
-                                            style={{ objectPosition: `${card.imageFraming.x}% ${card.imageFraming.y}%`,
+                                            style={{
+                                                objectPosition: `${card.imageFraming.x}% ${card.imageFraming.y}%`,
                                                 transform: `scale(${card.imageFraming.zoom})`,
-                                                transformOrigin: `${card.imageFraming.x}% ${card.imageFraming.y}%` }} />
+                                                transformOrigin: `${card.imageFraming.x}% ${card.imageFraming.y}%`
+                                            }} />
                                     ) : <span className="text-sm font-black">{card.title || 'Blank ad'}</span>}
                                     {card.layoutMode === 'image_text' && card.imageUrl && (
                                         <span className="relative rounded-lg bg-black/70 px-3 py-2 text-sm font-black">{card.title || 'Add a headline'}</span>
@@ -883,9 +932,12 @@ export default function MenuSpotlightManager({
                             </div>
 
                             <div className="max-w-sm">
-                                <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">Special Price</label>
+                                <label className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">Special Price (optional)</label>
                                 <SpotlightPriceInput priceCents={draft.priceCents}
                                     onChange={(value) => updateDraft('priceCents', value)} disabled={saving} />
+                                <p className="mt-2 text-xs text-text-secondary">
+                                    Leave blank to hide the price on the TV.
+                                </p>
                             </div>
                             <SpotlightScheduleEditor draft={draft} onChange={updateDraft} calendarEnabled={calendarEnabled} />
 

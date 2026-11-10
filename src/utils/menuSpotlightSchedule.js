@@ -83,10 +83,13 @@ export function validateRecurrence(rule) {
         || rule.days.some((day) => !Number.isInteger(day) || day < 0 || day > 6)) {
         return 'Select at least one day of the week.';
     }
-    const start = timeToMinutes(rule.startTime);
-    const end = timeToMinutes(rule.endTime);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) {
-        return 'Choose different start and end times. Earlier end times finish the next day.';
+    if (rule.allDay !== true) {
+        const start = timeToMinutes(rule.startTime);
+        const end = timeToMinutes(rule.endTime);
+
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) {
+            return 'Choose different start and end times. Earlier end times finish the next day.';
+        }
     }
     if ((rule.startDate && !isValidDateKey(rule.startDate))
         || (rule.endDate && !isValidDateKey(rule.endDate))) return 'Choose valid schedule dates.';
@@ -109,6 +112,9 @@ export function isSpotlightInSchedule(spotlight, now) {
         const rule = spotlight.recurrence;
         if (validateRecurrence(rule)) return false;
         const local = centralParts(now);
+        if (rule.allDay === true) {
+            return ruleStartsOnDate(rule, local.date);
+        }
         const start = timeToMinutes(rule.startTime);
         const end = timeToMinutes(rule.endTime);
         if (end > start) {
@@ -125,11 +131,28 @@ export function isSpotlightInSchedule(spotlight, now) {
         && (end === null || (Number.isFinite(end) && now < end));
 }
 
-export function isSpotlightEligible(spotlight, locationId, now, preview = false, calendarEnabled = true) {
+export function isSpotlightEligible(
+    spotlight,
+    locationId,
+    now,
+    preview = false,
+    calendarEnabled = true
+) {
     if (spotlight.enabled === false) return false;
-    const targets = Array.isArray(spotlight.targetLocationIds) ? spotlight.targetLocationIds : [];
+
+    const targets = Array.isArray(spotlight.targetLocationIds)
+        ? spotlight.targetLocationIds
+        : [];
+
+    const isDailySpecial =
+        spotlight.recurrence?.allDay === true;
+
     return (!targets.length || targets.includes(locationId))
-        && (preview || !calendarEnabled || isSpotlightInSchedule(spotlight, now));
+        && (
+            preview
+            || (!calendarEnabled && !isDailySpecial)
+            || isSpotlightInSchedule(spotlight, now)
+        );
 }
 
 export function spotlightOccursOnDate(spotlight, date) {
@@ -137,6 +160,9 @@ export function spotlightOccursOnDate(spotlight, date) {
     if (spotlight.recurrence) {
         const rule = spotlight.recurrence;
         if (validateRecurrence(rule)) return false;
+        if (rule.allDay === true) {
+            return ruleStartsOnDate(rule, date);
+        }
         return ruleStartsOnDate(rule, date)
             || (timeToMinutes(rule.endTime) < timeToMinutes(rule.startTime)
                 && timeToMinutes(rule.endTime) > 0

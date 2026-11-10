@@ -37,7 +37,7 @@ export default function SpotlightSchedulingToggle({ menuId, calendarEnabled, rea
                     <span id={`${id}-description`} className="mt-1 block text-sm text-text-secondary">
                         {calendarEnabled
                             ? 'On: enabled ads follow their saved schedules. Choose Whenever enabled for ads that need no dates.'
-                            : 'Off: all enabled ads for each location rotate regardless of dates. The calendar is hidden and saved schedules are kept.'}
+                            : 'Off: standard enabled ads rotate regardless of dates. Daily Specials still follow their selected weekdays. The calendar is hidden and saved schedules are kept.'}
                     </span>
                     <span className="mt-1 block text-xs text-text-secondary">Applies to this menu at every location and saves immediately. Each ad’s Enabled switch still applies.</span>
                 </span>
