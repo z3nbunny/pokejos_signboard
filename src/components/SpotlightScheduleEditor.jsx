@@ -3,6 +3,11 @@ import { WEEKDAYS } from '../utils/menuSpotlightSchedule';
 
 const inputClass = 'w-full rounded-xl border border-border bg-surface p-3';
 
+const DAY_NAMES = [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+    'Thursday', 'Friday', 'Saturday'
+];
+
 export default function SpotlightScheduleEditor({ draft, onChange, calendarEnabled = true }) {
     const id = useId();
     const changeRule = (field, value) => onChange('recurrence', {
@@ -14,9 +19,36 @@ export default function SpotlightScheduleEditor({ draft, onChange, calendarEnabl
             <p className="text-sm text-text-secondary">
                 {calendarEnabled
                     ? 'All schedules use Central time and follow daylight saving automatically. Overlapping specials rotate together.'
-                    : 'Calendar scheduling is off. Set this ad’s display duration below; its Enabled switch controls whether it can appear.'}
+                    : 'Calendar scheduling is off. Daily Specials still follow their selected weekday. Other enabled ads rotate regardless of their date schedules.'}
             </p>
             <div className="grid gap-4 md:grid-cols-2">
+                <label
+                    htmlFor={`${id}-daily-special`}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-surface p-3"
+                >
+                    <input
+                        id={`${id}-daily-special`}
+                        type="checkbox"
+                        checked={draft.scheduleType === 'daily'}
+                        onChange={(event) =>
+                            onChange(
+                                'scheduleType',
+                                event.target.checked ? 'daily' : 'always'
+                            )
+                        }
+                        className="mt-1 h-4 w-4 accent-accent"
+                    />
+
+                    <span>
+                        <span className="block text-sm font-bold">
+                            Daily Special
+                        </span>
+
+                        <span className="block text-xs text-text-secondary">
+                            Join the rotation every week on one selected day.
+                        </span>
+                    </span>
+                </label>
                 <label htmlFor={`${id}-duration`} className="space-y-2 text-sm font-bold">
                     <span className="block">Seconds on screen for this ad</span>
                     <input id={`${id}-duration`} type="number" min="5" max="300" step="1"
@@ -25,7 +57,7 @@ export default function SpotlightScheduleEditor({ draft, onChange, calendarEnabl
                         className={inputClass} />
                     <span className="block text-xs font-normal text-text-secondary">5–300 seconds. One ad stays visible continuously.</span>
                 </label>
-                {calendarEnabled && <label htmlFor={`${id}-type`} className="space-y-2 text-sm font-bold">
+                {calendarEnabled && draft.scheduleType !== 'daily' && <label htmlFor={`${id}-type`} className="space-y-2 text-sm font-bold">
                     <span className="block">When should this ad run?</span>
                     <select id={`${id}-type`} value={draft.scheduleType}
                         onChange={(event) => onChange('scheduleType', event.target.value)}
@@ -36,6 +68,38 @@ export default function SpotlightScheduleEditor({ draft, onChange, calendarEnabl
                     </select>
                 </label>}
             </div>
+            {draft.scheduleType === 'daily' && (
+                <label
+                    htmlFor={`${id}-special-day`}
+                    className="block space-y-2 text-sm font-bold"
+                >
+                    <span className="block">Special runs every</span>
+
+                    <select
+                        id={`${id}-special-day`}
+                        value={draft.recurrence.days[0] ?? ''}
+                        onChange={(event) =>
+                            changeRule('days', [Number(event.target.value)])
+                        }
+                        className={inputClass}
+                    >
+                        <option value="" disabled>
+                            Select a weekday
+                        </option>
+
+                        {DAY_NAMES.map((day, index) => (
+                            <option key={day} value={index}>
+                                {day}
+                            </option>
+                        ))}
+                    </select>
+
+                    <span className="block text-xs font-normal text-text-secondary">
+                        Runs all day in Central Time, every week.
+                        No start or end date needed.
+                    </span>
+                </label>
+            )}
             {calendarEnabled && draft.scheduleType === 'window' && (
                 <div className="grid gap-4 md:grid-cols-2">
                     <label htmlFor={`${id}-starts`} className="space-y-2 text-sm font-bold">
