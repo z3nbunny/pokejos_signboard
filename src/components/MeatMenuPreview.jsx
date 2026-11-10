@@ -83,7 +83,7 @@ const SECTION_SIZE_CLASSES = {
     bbq_plates: 'shrink-0',
     bbq_sandwiches: 'shrink-0',
     family_packs: 'shrink-0',
-    kids_meals: 'flex-1 mt-[1.9cqw]',
+    kids_meals: 'flex-1 mt-[0.8cqw]',
     meat_by_pound: 'flex-1',
     more_great_eating: 'shrink-0'
 };
