@@ -391,7 +391,7 @@ function MenuItem({
                     className={
                         (
                             sectionId === 'family_packs'
-                                ? 'grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-[0.75cqw] gap-y-[0.12cqw]'
+                                ? 'grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-[0.75cqw] gap-y-[0.12cqw]'
                                 : 'space-y-[0.1cqw]'
                         )
                         + ' '
