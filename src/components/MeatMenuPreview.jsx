@@ -732,11 +732,13 @@ function MenuSection({
                 'flex-1 min-h-0 flex flex-col '
                 + 'justify-evenly gap-[0.12cqw]'
             )
-            : section.id === 'family_packs'
-                ? 'space-y-[2cqw]'
-                : dense
-                    ? 'space-y-[0.38cqw]'
-                    : 'space-y-[0.56cqw]';
+            : section.id === 'kids_meals'
+                ? 'space-y-[0.9cqw]'
+                : section.id === 'family_packs'
+                    ? 'space-y-[2cqw]'
+                    : dense
+                        ? 'space-y-[0.38cqw]'
+                        : 'space-y-[0.56cqw]';
 
     const sizeClass =
         SECTION_SIZE_CLASSES[section.id]

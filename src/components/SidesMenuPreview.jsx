@@ -54,9 +54,9 @@ const COLUMN_GAP_CLASSES = [
 
 const SECTION_ITEM_SPACING_CLASSES = {
     hot_sides: 'space-y-[1.6cqw]',
-    cold_sides: 'space-y-[1.55cqw]',
-    desserts: 'space-y-[1.32cqw]',
-    bbq_sauces: 'space-y-[1.45cqw]',
+    cold_sides: 'space-y-[1.3cqw]',
+    desserts: 'space-y-[.9cqw]',
+    bbq_sauces: 'space-y-[1.15cqw]',
     drinks: 'space-y-[0.2cqw]'
 };
 
