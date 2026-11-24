@@ -8,7 +8,7 @@ import SoldOutManager from './SoldOutManager';
 import DevicePairingManager from './DevicePairingManager';
 import ImageFramingEditor from './ImageFramingEditor';
 import FramedImage from './FramedImage';
-
+import { normalizeImageFraming } from '../utils/imageFraming';
 
 const omitDocumentId = (record) => {
     const cleanRecord = {
@@ -20,28 +20,8 @@ const omitDocumentId = (record) => {
     return cleanRecord;
 };
 
-const normalizeFramingValue = (
-    value,
-    fallback,
-    minimum,
-    maximum
-) => {
-    const numericValue = Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return fallback;
-    }
-
-    return Math.min(
-        maximum,
-        Math.max(minimum, numericValue)
-    );
-};
-
 const createInfoForm = (card = {}) => {
     const imageFraming = card.imageFraming || {};
-    const standard = imageFraming.standard || {};
-    const feature = imageFraming.feature || {};
 
     return {
         title: card.title || '',
@@ -49,301 +29,15 @@ const createInfoForm = (card = {}) => {
         description: card.description || '',
         imageUrl: card.imageUrl || '',
         imageFraming: {
-            standard: {
-                zoom: normalizeFramingValue(
-                    standard.zoom,
-                    1,
-                    1,
-                    3
-                ),
-                x: normalizeFramingValue(
-                    standard.x,
-                    50,
-                    0,
-                    100
-                ),
-                y: normalizeFramingValue(
-                    standard.y,
-                    50,
-                    0,
-                    100
-                )
-            },
-            feature: {
-                zoom: normalizeFramingValue(
-                    feature.zoom,
-                    1,
-                    1,
-                    3
-                ),
-                x: normalizeFramingValue(
-                    feature.x,
-                    50,
-                    0,
-                    100
-                ),
-                y: normalizeFramingValue(
-                    feature.y,
-                    50,
-                    0,
-                    100
-                )
-            }
+            standard: normalizeImageFraming(
+                imageFraming.standard
+            ),
+            feature: normalizeImageFraming(
+                imageFraming.feature
+            )
         }
     };
 };
-
-function InfoCardFramingEditor({
-    mode,
-    label,
-    imageUrl,
-    framing,
-    onChange
-}) {
-    const safeFraming = {
-        zoom: normalizeFramingValue(
-            framing?.zoom,
-            1,
-            1,
-            3
-        ),
-        x: normalizeFramingValue(
-            framing?.x,
-            50,
-            0,
-            100
-        ),
-        y: normalizeFramingValue(
-            framing?.y,
-            50,
-            0,
-            100
-        )
-    };
-
-    const updatePointerPosition = (event) => {
-        const bounds =
-            event.currentTarget.getBoundingClientRect();
-
-        const x = (
-            (event.clientX - bounds.left)
-            / bounds.width
-        ) * 100;
-
-        const y = (
-            (event.clientY - bounds.top)
-            / bounds.height
-        ) * 100;
-
-        onChange({
-            ...safeFraming,
-            x: normalizeFramingValue(
-                x,
-                50,
-                0,
-                100
-            ),
-            y: normalizeFramingValue(
-                y,
-                50,
-                0,
-                100
-            )
-        });
-    };
-
-    const handlePointerDown = (event) => {
-        event.currentTarget.setPointerCapture(
-            event.pointerId
-        );
-
-        updatePointerPosition(event);
-    };
-
-    const handlePointerMove = (event) => {
-        if (
-            event.currentTarget.hasPointerCapture(
-                event.pointerId
-            )
-        ) {
-            updatePointerPosition(event);
-        }
-    };
-
-    const releasePointer = (event) => {
-        if (
-            event.currentTarget.hasPointerCapture(
-                event.pointerId
-            )
-        ) {
-            event.currentTarget.releasePointerCapture(
-                event.pointerId
-            );
-        }
-    };
-
-    const previewAspectRatio =
-        mode === 'feature'
-            ? '5 / 1'
-            : '2.3 / 1';
-
-    return (
-        <section className="bg-bg border border-border rounded-2xl p-4 space-y-4">
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-text-primary">
-                        {label}
-                    </h4>
-
-                    <p className="text-[11px] text-text-secondary mt-1">
-                        Click or drag over the image to position its focal point.
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={() =>
-                        onChange({
-                            zoom: 1,
-                            x: 50,
-                            y: 50
-                        })
-                    }
-                    className="shrink-0 px-3 py-1.5 rounded-full border border-border bg-surface text-[10px] font-bold uppercase text-text-secondary hover:bg-border"
-                >
-                    Reset
-                </button>
-            </div>
-
-            <div
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={releasePointer}
-                onPointerCancel={releasePointer}
-                className="relative w-full overflow-hidden rounded-xl bg-black border border-border cursor-crosshair touch-none select-none"
-                style={{
-                    aspectRatio: previewAspectRatio
-                }}
-            >
-                {imageUrl ? (
-                    <>
-                        <img
-                            src={imageUrl}
-                            alt={`${label} preview`}
-                            draggable={false}
-                            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-                            style={{
-                                objectPosition:
-                                    `${safeFraming.x}% ${safeFraming.y}%`,
-                                transform:
-                                    `scale(${safeFraming.zoom})`,
-                                transformOrigin:
-                                    `${safeFraming.x}% ${safeFraming.y}%`
-                            }}
-                        />
-
-                        <div
-                            className="absolute w-6 h-6 rounded-full border-2 border-white bg-black/20 shadow-[0_0_0_2px_rgba(0,0,0,0.45)] pointer-events-none"
-                            style={{
-                                left: `${safeFraming.x}%`,
-                                top: `${safeFraming.y}%`,
-                                transform:
-                                    'translate(-50%, -50%)'
-                            }}
-                        >
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/80 -translate-x-1/2" />
-                            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/80 -translate-y-1/2" />
-                        </div>
-                    </>
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs text-white/60">
-                        Enter an image URL to begin framing.
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-3">
-                <label className="block">
-                    <span className="flex justify-between text-[11px] font-bold uppercase text-text-secondary mb-1">
-                        <span>Zoom</span>
-                        <span>
-                            {safeFraming.zoom.toFixed(2)}×
-                        </span>
-                    </span>
-
-                    <input
-                        type="range"
-                        min="1"
-                        max="3"
-                        step="0.05"
-                        value={safeFraming.zoom}
-                        onChange={(event) =>
-                            onChange({
-                                ...safeFraming,
-                                zoom: Number(
-                                    event.target.value
-                                )
-                            })
-                        }
-                        className="w-full cursor-pointer"
-                    />
-                </label>
-
-                <label className="block">
-                    <span className="flex justify-between text-[11px] font-bold uppercase text-text-secondary mb-1">
-                        <span>Horizontal position</span>
-                        <span>
-                            {Math.round(safeFraming.x)}%
-                        </span>
-                    </span>
-
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={safeFraming.x}
-                        onChange={(event) =>
-                            onChange({
-                                ...safeFraming,
-                                x: Number(
-                                    event.target.value
-                                )
-                            })
-                        }
-                        className="w-full cursor-pointer"
-                    />
-                </label>
-
-                <label className="block">
-                    <span className="flex justify-between text-[11px] font-bold uppercase text-text-secondary mb-1">
-                        <span>Vertical position</span>
-                        <span>
-                            {Math.round(safeFraming.y)}%
-                        </span>
-                    </span>
-
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={safeFraming.y}
-                        onChange={(event) =>
-                            onChange({
-                                ...safeFraming,
-                                y: Number(
-                                    event.target.value
-                                )
-                            })
-                        }
-                        className="w-full cursor-pointer"
-                    />
-                </label>
-            </div>
-        </section>
-    );
-}
 
 function InfoCardLibraryPreview({
     mode,
@@ -351,26 +45,7 @@ function InfoCardLibraryPreview({
     imageUrl,
     framing
 }) {
-    const safeFraming = {
-        zoom: normalizeFramingValue(
-            framing?.zoom,
-            1,
-            1,
-            3
-        ),
-        x: normalizeFramingValue(
-            framing?.x,
-            50,
-            0,
-            100
-        ),
-        y: normalizeFramingValue(
-            framing?.y,
-            50,
-            0,
-            100
-        )
-    };
+    const safeFraming = normalizeImageFraming(framing);
 
     const previewAspectRatio =
         mode === 'feature'
@@ -394,19 +69,15 @@ function InfoCardLibraryPreview({
                 }}
             >
                 {imageUrl ? (
-                    <img
+
+                    <FramedImage
                         src={imageUrl}
                         alt={`${label} preview`}
+                        framing={safeFraming}
+                        objectFit="cover"
                         className="absolute inset-0 w-full h-full object-cover"
-                        style={{
-                            objectPosition:
-                                `${safeFraming.x}% ${safeFraming.y}%`,
-                            transform:
-                                `scale(${safeFraming.zoom})`,
-                            transformOrigin:
-                                `${safeFraming.x}% ${safeFraming.y}%`
-                        }}
                     />
+
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-[9px] text-white/50">
                         No image
@@ -1332,15 +1003,17 @@ export default function Admin() {
                                         <div><label className="text-[11px] uppercase text-text-secondary font-medium block mb-2">Image URL</label><input type="url" value={infoForm.imageUrl} onChange={(e) => setInfoForm({ ...infoForm, imageUrl: e.target.value })} className="w-full bg-bg border border-border text-sm rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none" /></div>
                                     </div>
                                     <div><label className="text-[11px] uppercase text-text-secondary font-medium block mb-2">Description</label><textarea value={infoForm.description} onChange={(e) => setInfoForm({ ...infoForm, description: e.target.value })} rows="2" className="w-full bg-bg border border-border text-sm rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none resize-none"></textarea></div>
+
                                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                                        <InfoCardFramingEditor
-                                            mode="standard"
-                                            label="Standard Grid Preview"
+                                        <ImageFramingEditor
+                                            label="Standard Grid Framing"
                                             imageUrl={infoForm.imageUrl}
-                                            framing={
-                                                infoForm.imageFraming.standard
-                                            }
-                                            onChange={(nextFraming) =>
+                                            imageAlt={infoForm.title || 'Info Card'}
+                                            framing={infoForm.imageFraming.standard}
+                                            aspectRatio="2.3 / 1"
+                                            objectFit="cover"
+                                            showImageControls={false}
+                                            onFramingChange={(nextFraming) =>
                                                 handleInfoFramingChange(
                                                     'standard',
                                                     nextFraming
@@ -1348,14 +1021,15 @@ export default function Admin() {
                                             }
                                         />
 
-                                        <InfoCardFramingEditor
-                                            mode="feature"
-                                            label="Feature Mode Preview"
+                                        <ImageFramingEditor
+                                            label="Feature Mode Framing"
                                             imageUrl={infoForm.imageUrl}
-                                            framing={
-                                                infoForm.imageFraming.feature
-                                            }
-                                            onChange={(nextFraming) =>
+                                            imageAlt={infoForm.title || 'Info Card'}
+                                            framing={infoForm.imageFraming.feature}
+                                            aspectRatio="5 / 1"
+                                            objectFit="cover"
+                                            showImageControls={false}
+                                            onFramingChange={(nextFraming) =>
                                                 handleInfoFramingChange(
                                                     'feature',
                                                     nextFraming
@@ -1363,6 +1037,7 @@ export default function Admin() {
                                             }
                                         />
                                     </div>
+
                                     <button type="submit" className="w-full md:w-auto text-white bg-accent hover:bg-accent-hover font-bold uppercase text-sm px-8 py-3 rounded-full tracking-wider shadow-sm transition-colors">{editingId.info ? 'Save Changes' : 'Add'}</button>
                                 </form>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

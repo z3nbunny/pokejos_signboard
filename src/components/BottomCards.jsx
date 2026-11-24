@@ -3,49 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase'; // Ensure your firebase config is set up
 import { collection, onSnapshot } from 'firebase/firestore';
 import FramedImage from './FramedImage';
-
-const getSafeFramingValue = (
-    value,
-    fallback,
-    minimum,
-    maximum
-) => {
-    const numericValue = Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return fallback;
-    }
-
-    return Math.min(
-        maximum,
-        Math.max(minimum, numericValue)
-    );
-};
+import { normalizeImageFraming } from '../utils/imageFraming';
 
 const getCardImageFraming = (card, isFeature) => {
     const mode = isFeature ? 'feature' : 'standard';
-    const framing = card?.imageFraming?.[mode] || {};
 
-    return {
-        zoom: getSafeFramingValue(
-            framing.zoom,
-            1,
-            1,
-            3
-        ),
-        x: getSafeFramingValue(
-            framing.x,
-            50,
-            0,
-            100
-        ),
-        y: getSafeFramingValue(
-            framing.y,
-            50,
-            0,
-            100
-        )
-    };
+    return normalizeImageFraming(
+        card?.imageFraming?.[mode]
+    );
 };
 
 export default function BottomCards({ isFeature, activeLocation }) {

@@ -16,11 +16,9 @@ import {
 /**
  * FRAMED_IMAGE_COMPONENT
  *
- * Legacy framing uses the original image element
- * and focal-point positioning.
- *
- * Version 2 uses a clipped frame with an image
- * that can be zoomed and panned independently.
+ * Legacy records retain their original styling.
+ * Version 2 renders the scaled image at its actual
+ * calculated dimensions for accurate bounded panning.
  */
 export default function FramedImage({
     src,
@@ -32,7 +30,6 @@ export default function FramedImage({
 }) {
     const frameRef = useRef(null);
     const imageRef = useRef(null);
-
     const [dimensions, setDimensions] = useState(null);
 
     const safeFraming = normalizeImageFraming(framing);
@@ -52,26 +49,10 @@ export default function FramedImage({
             return;
         }
 
-        const computed = window.getComputedStyle(frame);
-
-        const paddingX =
-            parseFloat(computed.paddingLeft) +
-            parseFloat(computed.paddingRight);
-
-        const paddingY =
-            parseFloat(computed.paddingTop) +
-            parseFloat(computed.paddingBottom);
-
         const next = {
             src,
-            viewportWidth: Math.max(
-                0,
-                frame.clientWidth - paddingX
-            ),
-            viewportHeight: Math.max(
-                0,
-                frame.clientHeight - paddingY
-            ),
+            viewportWidth: frame.clientWidth,
+            viewportHeight: frame.clientHeight,
             imageWidth: image.naturalWidth,
             imageHeight: image.naturalHeight
         };
@@ -97,13 +78,11 @@ export default function FramedImage({
         }
 
         const observer = new ResizeObserver(measure);
-
         observer.observe(frameRef.current);
 
         return () => observer.disconnect();
     }, [isVersion2, measure]);
 
-    // Preserve the original rendering behavior.
     if (!isVersion2) {
         return (
             <img
@@ -119,7 +98,6 @@ export default function FramedImage({
         );
     }
 
-    // IMAGE_FRAMING_V2_METRICS
     const metrics =
         dimensions?.src === src
             ? getImagePanMetrics({
@@ -129,36 +107,43 @@ export default function FramedImage({
             })
             : null;
 
-    const offsetX = metrics?.offsetX ?? 0;
-    const offsetY = metrics?.offsetY ?? 0;
-
+    // IMAGE_FRAMING_V2_RENDER
     return (
         <div
-            ref={frameRef}
             className={`${className} overflow-hidden`}
             style={style}
         >
-            <img
-                ref={imageRef}
-                src={src}
-                alt={alt}
-                draggable={false}
-                onLoad={measure}
-                className="block w-full h-full select-none pointer-events-none"
-                style={{
-                    objectFit,
-                    objectPosition: 'center',
-                    transform: `
-                        translate3d(
-                            ${offsetX}px,
-                            ${offsetY}px,
-                            0
-                        )
-                        scale(${safeFraming.zoom})
-                    `,
-                    transformOrigin: 'center center'
-                }}
-            />
+            <div
+                ref={frameRef}
+                data-image-framing-viewport
+                className="relative w-full h-full overflow-hidden"
+            >
+                <img
+                    ref={imageRef}
+                    src={src}
+                    alt={alt}
+                    draggable={false}
+                    onLoad={measure}
+                    className="absolute block max-w-none max-h-none select-none pointer-events-none"
+                    style={metrics
+                        ? {
+                            left: '50%',
+                            top: '50%',
+                            width: metrics.displayedWidth,
+                            height: metrics.displayedHeight,
+                            transform: `translate(
+                                calc(-50% + ${metrics.offsetX}px),
+                                calc(-50% + ${metrics.offsetY}px)
+                            )`
+                        }
+                        : {
+                            inset: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit
+                        }}
+                />
+            </div>
         </div>
     );
 }

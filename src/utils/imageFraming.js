@@ -216,3 +216,28 @@ export function panFramingByPixels(
             : 0
     };
 }
+
+/**
+ * IMAGE_FRAMING_CONVERT_TO_V2
+ *
+ * Preserve the direction and approximate placement of
+ * legacy focal points when editing begins.
+ *
+ * For cover images, this maps the existing positioning
+ * to normalized pan coordinates.
+ */
+export function toVersion2Framing(framing) {
+    const safe = normalizeImageFraming(framing);
+
+    if (!isLegacyFraming(safe)) {
+        return safe;
+    }
+
+    return {
+        version: 2,
+        zoom: safe.zoom,
+        panX: (50 - safe.x) / 50,
+        panY: (50 - safe.y) / 50
+    };
+}
+

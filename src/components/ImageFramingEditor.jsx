@@ -1,57 +1,19 @@
-import {
-    useState
-} from 'react';
 
-const DEFAULT_FRAMING = {
-    zoom: 1,
-    x: 50,
-    y: 50
-};
+import { useRef, useState } from 'react';
+
+import FramedImage from './FramedImage';
+
+import {
+    DEFAULT_IMAGE_FRAMING,
+    getImagePanMetrics,
+    normalizeImageFraming,
+    panFramingByPixels,
+    toVersion2Framing
+} from '../utils/imageFraming';
 
 const MAX_IMAGE_CHARACTERS = 650000;
 const MAX_IMAGE_WIDTH = 1600;
 const MAX_IMAGE_HEIGHT = 1200;
-
-const clampNumber = (
-    value,
-    fallback,
-    minimum,
-    maximum
-) => {
-    const numericValue = Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return fallback;
-    }
-
-    return Math.min(
-        maximum,
-        Math.max(minimum, numericValue)
-    );
-};
-
-const normalizeImageFraming = (
-    framing
-) => ({
-    zoom: clampNumber(
-        framing?.zoom,
-        DEFAULT_FRAMING.zoom,
-        1,
-        3
-    ),
-    x: clampNumber(
-        framing?.x,
-        DEFAULT_FRAMING.x,
-        0,
-        100
-    ),
-    y: clampNumber(
-        framing?.y,
-        DEFAULT_FRAMING.y,
-        0,
-        100
-    )
-});
 
 const loadImage = (source) =>
     new Promise((resolve, reject) => {
@@ -189,6 +151,7 @@ export default function ImageFramingEditor({
     aspectRatio = '2 / 1',
     objectFit = 'cover',
     disabled = false,
+    showImageControls = true,
     onImageChange,
     onFramingChange
 }) {
@@ -197,56 +160,112 @@ export default function ImageFramingEditor({
 
     const [error, setError] = useState('');
 
-    const safeFraming =
-        normalizeImageFraming(framing);
+    const dragRef = useRef(null);
+
+    const safeFraming = normalizeImageFraming(framing);
+    const editableFraming = toVersion2Framing(safeFraming);
 
     const isStoredUpload =
         imageUrl.startsWith('data:image/');
 
-    const updatePointerPosition = (event) => {
-        if (disabled || processing) {
+
+    // IMAGE_FRAMING_DRAG_START
+    const handlePointerDown = (event) => {
+        if (disabled || processing || !imageUrl) return;
+
+        if (
+            event.pointerType === 'mouse' &&
+            event.button !== 0
+        ) {
             return;
         }
 
-        const bounds =
-            event.currentTarget.getBoundingClientRect();
 
-        const x = (
-            (event.clientX - bounds.left)
-            / bounds.width
-        ) * 100;
+        const frame = event.currentTarget;
+        const viewport =
+            frame.querySelector('[data-image-framing-viewport]')
+            || frame;
 
-        const y = (
-            (event.clientY - bounds.top)
-            / bounds.height
-        ) * 100;
+        const image = frame.querySelector('img');
 
-        onFramingChange({
-            ...safeFraming,
-            x: clampNumber(x, 50, 0, 100),
-            y: clampNumber(y, 50, 0, 100)
-        });
-    };
 
-    const handlePointerDown = (event) => {
-        event.currentTarget.setPointerCapture(
-            event.pointerId
-        );
-
-        updatePointerPosition(event);
-    };
-
-    const handlePointerMove = (event) => {
         if (
-            event.currentTarget.hasPointerCapture(
+            !image ||
+            !image.naturalWidth ||
+            !image.naturalHeight
+        ) {
+            return;
+        }
+
+        const startingFraming =
+            toVersion2Framing(safeFraming);
+
+        const metrics = getImagePanMetrics({
+
+            viewportWidth: viewport.clientWidth,
+            viewportHeight: viewport.clientHeight,
+            imageWidth: image.naturalWidth,
+            imageHeight: image.naturalHeight,
+            framing: startingFraming,
+            objectFit
+        });
+
+        if (!metrics) return;
+
+        dragRef.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            startingFraming,
+            metrics
+        };
+
+        frame.setPointerCapture(event.pointerId);
+    };
+
+    // IMAGE_FRAMING_DRAG_MOVE
+    const handlePointerMove = (event) => {
+        const drag = dragRef.current;
+
+        if (
+            !drag ||
+            drag.pointerId !== event.pointerId ||
+            !event.currentTarget.hasPointerCapture(
                 event.pointerId
             )
         ) {
-            updatePointerPosition(event);
+            return;
         }
+
+        const deltaX = event.clientX - drag.startX;
+        const deltaY = event.clientY - drag.startY;
+
+        if (
+            Math.abs(deltaX) < 1 &&
+            Math.abs(deltaY) < 1
+        ) {
+            return;
+        }
+
+        const nextFraming = panFramingByPixels(
+            drag.startingFraming,
+            deltaX,
+            deltaY,
+            drag.metrics
+        );
+
+        onFramingChange(nextFraming);
     };
 
+    // IMAGE_FRAMING_DRAG_END
     const releasePointer = (event) => {
+        if (
+            dragRef.current?.pointerId ===
+            event.pointerId
+        ) {
+            dragRef.current = null;
+        }
+
         if (
             event.currentTarget.hasPointerCapture(
                 event.pointerId
@@ -275,7 +294,7 @@ export default function ImageFramingEditor({
                 await optimizeImageFile(file);
 
             onImageChange(optimizedImage);
-            onFramingChange(DEFAULT_FRAMING);
+            onFramingChange({ ...DEFAULT_IMAGE_FRAMING });
         } catch (selectionError) {
             setError(
                 selectionError.message
@@ -294,45 +313,51 @@ export default function ImageFramingEditor({
                         {label}
                     </h4>
 
+
                     <p className="mt-1 text-[11px] text-text-secondary">
-                        Upload an image or paste an image URL. Click or drag over the preview to set its focal point.
+                        {showImageControls
+                            ? 'Upload an image or paste an image URL. Zoom in, then drag to reposition it.'
+                            : 'Zoom in, then drag the image to reposition it. Use the sliders for precise adjustments.'}
                     </p>
+
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    <label className="px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-white text-[10px] font-bold uppercase cursor-pointer">
-                        {processing
-                            ? 'Preparing...'
-                            : 'Upload Image'}
+                    {showImageControls && (
+                        <label className="px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-white text-[10px] font-bold uppercase cursor-pointer">
+                            {processing
+                                ? 'Preparing...'
+                                : 'Upload Image'}
 
-                        <input
-                            type="file"
-                            accept="image/*"
-                            disabled={disabled || processing}
-                            onChange={handleFileSelection}
-                            className="sr-only"
-                        />
-                    </label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                disabled={disabled || processing}
+                                onChange={handleFileSelection}
+                                className="sr-only"
+                            />
+                        </label>
+                    )}
 
                     <button
                         type="button"
                         disabled={disabled || processing}
                         onClick={() =>
-                            onFramingChange(DEFAULT_FRAMING)
+                            onFramingChange({ ...DEFAULT_IMAGE_FRAMING })
                         }
                         className="px-3 py-1.5 rounded-full border border-border bg-bg text-[10px] font-bold uppercase text-text-secondary hover:bg-border disabled:opacity-50"
                     >
                         Reset Framing
                     </button>
 
-                    {imageUrl && (
+                    {showImageControls && imageUrl && (
                         <button
                             type="button"
                             disabled={disabled || processing}
                             onClick={() => {
                                 onImageChange('');
                                 onFramingChange(
-                                    DEFAULT_FRAMING
+                                    { ...DEFAULT_IMAGE_FRAMING }
                                 );
                                 setError('');
                             }}
@@ -344,82 +369,64 @@ export default function ImageFramingEditor({
                 </div>
             </div>
 
-            <label className="block">
-                <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
-                    Image URL
-                </span>
+            {showImageControls && (
+                <label className="block">
+                    <span className="text-[11px] uppercase tracking-wider text-text-secondary font-bold block mb-2">
+                        Image URL
+                    </span>
 
-                <input
-                    type="url"
-                    value={
-                        isStoredUpload
-                            ? ''
-                            : imageUrl
-                    }
-                    placeholder={
-                        isStoredUpload
-                            ? 'Uploaded image is currently selected'
-                            : 'https://example.com/special.jpg'
-                    }
-                    disabled={disabled || processing}
-                    onChange={(event) => {
-                        setError('');
-                        onImageChange(
-                            event.target.value
-                        );
-                    }}
-                    className="w-full bg-bg border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none disabled:opacity-50"
-                />
-            </label>
-
+                    <input
+                        type="url"
+                        value={
+                            isStoredUpload
+                                ? ''
+                                : imageUrl
+                        }
+                        placeholder={
+                            isStoredUpload
+                                ? 'Uploaded image is currently selected'
+                                : 'https://example.com/special.jpg'
+                        }
+                        disabled={disabled || processing}
+                        onChange={(event) => {
+                            setError('');
+                            onImageChange(
+                                event.target.value
+                            );
+                        }}
+                        className="w-full bg-bg border border-border rounded-xl p-3 focus:ring-2 focus:ring-accent focus:outline-none disabled:opacity-50"
+                    />
+                </label>
+            )}
             <div
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={releasePointer}
                 onPointerCancel={releasePointer}
-                className="relative w-full overflow-hidden rounded-xl bg-black border border-border cursor-crosshair touch-none select-none"
+                onLostPointerCapture={() => {
+                    dragRef.current = null;
+                }}
+                className="relative w-full overflow-hidden rounded-xl bg-black border border-border cursor-grab active:cursor-grabbing touch-none select-none"
                 style={{ aspectRatio }}
             >
                 {imageUrl ? (
-                    <>
-                        <img
-                            src={imageUrl}
-                            alt={
-                                imageAlt
-                                || `${label} preview`
-                            }
-                            draggable={false}
-                            className={`absolute inset-0 w-full h-full pointer-events-none select-none ${objectFit === 'contain' ? 'object-contain' : 'object-cover'
-                                }`}
-                            style={{
-                                objectPosition:
-                                    `${safeFraming.x}% ${safeFraming.y}%`,
-                                transform:
-                                    `scale(${safeFraming.zoom})`,
-                                transformOrigin:
-                                    `${safeFraming.x}% ${safeFraming.y}%`
-                            }}
-                        />
-
-                        <div
-                            className="absolute w-6 h-6 rounded-full border-2 border-white bg-black/20 shadow-[0_0_0_2px_rgba(0,0,0,0.45)] pointer-events-none"
-                            style={{
-                                left: `${safeFraming.x}%`,
-                                top: `${safeFraming.y}%`,
-                                transform:
-                                    'translate(-50%, -50%)'
-                            }}
-                        >
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/80 -translate-x-1/2" />
-                            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/80 -translate-y-1/2" />
-                        </div>
-                    </>
+                    <FramedImage
+                        src={imageUrl}
+                        alt={imageAlt || `${label} preview`}
+                        framing={safeFraming}
+                        objectFit={objectFit}
+                        className={`absolute inset-0 w-full h-full pointer-events-none select-none ${objectFit === 'contain'
+                            ? 'object-contain'
+                            : 'object-cover'
+                            }`}
+                    />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-white/60">
                         Choose an image to begin framing.
                     </div>
                 )}
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <label className="block">
@@ -439,7 +446,7 @@ export default function ImageFramingEditor({
                         disabled={disabled || processing}
                         onChange={(event) =>
                             onFramingChange({
-                                ...safeFraming,
+                                ...editableFraming,
                                 zoom: Number(
                                     event.target.value
                                 )
@@ -449,27 +456,26 @@ export default function ImageFramingEditor({
                     />
                 </label>
 
+
                 <label className="block">
                     <span className="flex justify-between text-[11px] font-bold uppercase text-text-secondary mb-1">
-                        <span>Horizontal</span>
+                        <span>Horizontal pan</span>
                         <span>
-                            {Math.round(safeFraming.x)}%
+                            {Math.round(editableFraming.panX * 100)}%
                         </span>
                     </span>
 
                     <input
                         type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={safeFraming.x}
+                        min="-1"
+                        max="1"
+                        step="0.01"
+                        value={editableFraming.panX}
                         disabled={disabled || processing}
                         onChange={(event) =>
                             onFramingChange({
-                                ...safeFraming,
-                                x: Number(
-                                    event.target.value
-                                )
+                                ...editableFraming,
+                                panX: Number(event.target.value)
                             })
                         }
                         className="w-full cursor-pointer disabled:opacity-50"
@@ -478,30 +484,29 @@ export default function ImageFramingEditor({
 
                 <label className="block">
                     <span className="flex justify-between text-[11px] font-bold uppercase text-text-secondary mb-1">
-                        <span>Vertical</span>
+                        <span>Vertical pan</span>
                         <span>
-                            {Math.round(safeFraming.y)}%
+                            {Math.round(editableFraming.panY * 100)}%
                         </span>
                     </span>
 
                     <input
                         type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={safeFraming.y}
+                        min="-1"
+                        max="1"
+                        step="0.01"
+                        value={editableFraming.panY}
                         disabled={disabled || processing}
                         onChange={(event) =>
                             onFramingChange({
-                                ...safeFraming,
-                                y: Number(
-                                    event.target.value
-                                )
+                                ...editableFraming,
+                                panY: Number(event.target.value)
                             })
                         }
                         className="w-full cursor-pointer disabled:opacity-50"
                     />
                 </label>
+
             </div>
 
             {error && (
