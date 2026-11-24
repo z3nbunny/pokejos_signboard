@@ -2,49 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase'; // Ensure your firebase config is set up
 import { collection, onSnapshot } from 'firebase/firestore';
-
-const getSafeFramingValue = (
-    value,
-    fallback,
-    minimum,
-    maximum
-) => {
-    const numericValue = Number(value);
-
-    if (!Number.isFinite(numericValue)) {
-        return fallback;
-    }
-
-    return Math.min(
-        maximum,
-        Math.max(minimum, numericValue)
-    );
-};
+import FramedImage from './FramedImage';
+import { normalizeImageFraming } from '../utils/imageFraming';
 
 const getCardImageFraming = (card, isFeature) => {
     const mode = isFeature ? 'feature' : 'standard';
-    const framing = card?.imageFraming?.[mode] || {};
 
-    return {
-        zoom: getSafeFramingValue(
-            framing.zoom,
-            1,
-            1,
-            3
-        ),
-        x: getSafeFramingValue(
-            framing.x,
-            50,
-            0,
-            100
-        ),
-        y: getSafeFramingValue(
-            framing.y,
-            50,
-            0,
-            100
-        )
-    };
+    return normalizeImageFraming(
+        card?.imageFraming?.[mode]
+    );
 };
 
 export default function BottomCards({ isFeature, activeLocation }) {
@@ -139,19 +105,15 @@ export default function BottomCards({ isFeature, activeLocation }) {
                                     className="absolute inset-0 rounded-[1vw] overflow-hidden bg-black border border-black/10 flex flex-col"
                                 >
                                     <div className="w-full h-[60%] bg-black relative overflow-hidden">
-                                        <img
+
+                                        <FramedImage
                                             src={card.imageUrl}
-                                            alt={card.title}
+                                            alt={card.title || 'Info Card'}
+                                            framing={imageFraming}
+                                            objectFit="cover"
                                             className="w-full h-full object-cover"
-                                            style={{
-                                                objectPosition:
-                                                    `${imageFraming.x}% ${imageFraming.y}%`,
-                                                transform:
-                                                    `scale(${imageFraming.zoom})`,
-                                                transformOrigin:
-                                                    `${imageFraming.x}% ${imageFraming.y}%`
-                                            }}
                                         />
+
                                     </div>
 
                                     {/* Updated the text box to match the monochrome design */}

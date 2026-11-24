@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
+import FramedImage from './FramedImage';
+
 
 export default function MerchCarousel({ isFeature, activeLocation }) {
     const [slides, setSlides] = useState([]);
@@ -74,13 +76,16 @@ export default function MerchCarousel({ isFeature, activeLocation }) {
                         className={`${isFeature ? 'w-[48%]' : 'w-[32%]'} h-full flex flex-col relative overflow-hidden rounded-[1vw] border border-black/10 shrink-0 bg-black`}
                     >
                         {/* 1. The Image Wrapper: Now flexes to take ONLY the remaining space */}
-                        <div className="flex-1 w-full bg-white relative">
-                            <img
+
+                        <div className="flex-1 min-h-0 w-full bg-white relative overflow-hidden">
+
+                            <FramedImage
                                 src={slide.imageUrl || slide.image}
-                                alt={slide.title}
-                                /* absolute inset-0 forces the image to respect the flexible boundaries */
+                                alt={slide.title || 'Merchandise'}
+                                framing={slide.imageFraming}
                                 className="absolute inset-0 w-full h-full object-contain p-[1vw]"
                             />
+
                         </div>
 
                         {/* 2. The Text Box: shrink-0 guarantees it never gets squished or pushed off the edge */}
