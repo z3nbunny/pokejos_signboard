@@ -187,6 +187,7 @@ export default function ImageFramingEditor({
     imageAlt = '',
     framing,
     aspectRatio = '2 / 1',
+    objectFit = 'cover',
     disabled = false,
     onImageChange,
     onFramingChange
@@ -388,7 +389,8 @@ export default function ImageFramingEditor({
                                 || `${label} preview`
                             }
                             draggable={false}
-                            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                            className={`absolute inset-0 w-full h-full pointer-events-none select-none ${objectFit === 'contain' ? 'object-contain' : 'object-cover'
+                                }`}
                             style={{
                                 objectPosition:
                                     `${safeFraming.x}% ${safeFraming.y}%`,

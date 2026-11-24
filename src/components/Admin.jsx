@@ -6,6 +6,9 @@ import FleetDashboard from './FleetDashboard';
 import RestaurantMenuWorkspace from './RestaurantMenuWorkspace';
 import SoldOutManager from './SoldOutManager';
 import DevicePairingManager from './DevicePairingManager';
+import ImageFramingEditor from './ImageFramingEditor';
+import FramedImage from './FramedImage';
+
 
 const omitDocumentId = (record) => {
     const cleanRecord = {
@@ -458,7 +461,18 @@ export default function Admin() {
     const [newSchedStartDate, setNewSchedStartDate] = useState(localISOTime);
     const [newSchedEndDate, setNewSchedEndDate] = useState(localISOTime);
 
-    const [merchForm, setMerchForm] = useState({ title: '', subtitle: '', imageUrl: '' });
+    const emptyMerchForm = () => ({
+        title: '',
+        subtitle: '',
+        imageUrl: '',
+        imageFraming: {
+            zoom: 1,
+            x: 50,
+            y: 50
+        }
+    });
+
+    const [merchForm, setMerchForm] = useState(emptyMerchForm);
     const [infoForm, setInfoForm] = useState(
         () => createInfoForm()
     ); const defaultCampaign = { campaignName: '', targetMode: 'FEATURE_BOARD', title: '', subtitle: '', description: '', imageUrl: '', slides: [] };
@@ -674,7 +688,7 @@ export default function Admin() {
         } else {
             await addDoc(collection(db, 'locations', activeLocation, 'merchSlides'), merchForm);
         }
-        setMerchForm({ title: '', subtitle: '', imageUrl: '' });
+        setMerchForm(emptyMerchForm());
     };
 
     const handleSaveInfo = async (e) => {
@@ -1207,7 +1221,7 @@ export default function Admin() {
                                             {editingId.merch ? 'Editing Merch Slide' : 'Add New Merch Slide'}
                                         </h3>
                                         {editingId.merch && (
-                                            <button type="button" onClick={() => { setEditingId({ ...editingId, merch: null }); setMerchForm({ title: '', subtitle: '', imageUrl: '' }); }} className="text-[10px] bg-bg text-text-secondary border border-border px-3 py-1 rounded-full font-bold uppercase tracking-wider hover:bg-border">
+                                            <button type="button" onClick={() => { setEditingId({ ...editingId, merch: null }); setMerchForm(emptyMerchForm()); }} className="text-[10px] bg-bg text-text-secondary border border-border px-3 py-1 rounded-full font-bold uppercase tracking-wider hover:bg-border">
                                                 Cancel Edit
                                             </button>
                                         )}
@@ -1221,12 +1235,43 @@ export default function Admin() {
                                             <button type="submit" className="text-white bg-accent hover:bg-accent-hover text-xs font-bold uppercase px-6 h-[46px] rounded-full tracking-wider transition-colors mt-auto shadow-sm">{editingId.merch ? 'Save' : 'Add'}</button>
                                         </div>
                                     </div>
+                                    <ImageFramingEditor
+                                        label="Merchandise Image Framing"
+                                        imageUrl={merchForm.imageUrl || ''}
+                                        imageAlt={merchForm.title || 'Merchandise'}
+                                        framing={merchForm.imageFraming}
+                                        aspectRatio="1 / 1"
+                                        objectFit="contain"
+                                        onImageChange={(imageUrl) =>
+                                            setMerchForm((previous) => ({
+                                                ...previous,
+                                                imageUrl
+                                            }))
+                                        }
+                                        onFramingChange={(imageFraming) =>
+                                            setMerchForm((previous) => ({
+                                                ...previous,
+                                                imageFraming
+                                            }))
+                                        }
+                                    />
                                 </form>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                     {merchItems.map(item => (
                                         <div key={item.id} className="bg-surface rounded-3xl border border-border overflow-hidden flex flex-col justify-between shadow-sm">
                                             <div className="p-5 flex gap-4 items-center">
-                                                <img src={item.imageUrl || item.image} alt="" className="w-16 h-16 rounded-xl object-contain bg-white p-1 shrink-0 border border-border" />
+
+                                                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-border">
+
+                                                    <FramedImage
+                                                        src={item.imageUrl || item.image}
+                                                        alt=""
+                                                        framing={item.imageFraming}
+                                                        className="absolute inset-0 w-full h-full object-contain p-1"
+                                                    />
+
+                                                </div>
+
                                                 <div className="truncate">
                                                     <h4 className="text-[10px] text-text-secondary font-bold uppercase tracking-wider mb-1">{item.subtitle}</h4>
                                                     <h3 className="text-sm font-bold truncate text-text-primary">{item.title}</h3>

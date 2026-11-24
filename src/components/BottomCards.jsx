@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase'; // Ensure your firebase config is set up
 import { collection, onSnapshot } from 'firebase/firestore';
+import FramedImage from './FramedImage';
 
 const getSafeFramingValue = (
     value,
@@ -139,19 +140,15 @@ export default function BottomCards({ isFeature, activeLocation }) {
                                     className="absolute inset-0 rounded-[1vw] overflow-hidden bg-black border border-black/10 flex flex-col"
                                 >
                                     <div className="w-full h-[60%] bg-black relative overflow-hidden">
-                                        <img
+
+                                        <FramedImage
                                             src={card.imageUrl}
-                                            alt={card.title}
+                                            alt={card.title || 'Info Card'}
+                                            framing={imageFraming}
+                                            objectFit="cover"
                                             className="w-full h-full object-cover"
-                                            style={{
-                                                objectPosition:
-                                                    `${imageFraming.x}% ${imageFraming.y}%`,
-                                                transform:
-                                                    `scale(${imageFraming.zoom})`,
-                                                transformOrigin:
-                                                    `${imageFraming.x}% ${imageFraming.y}%`
-                                            }}
                                         />
+
                                     </div>
 
                                     {/* Updated the text box to match the monochrome design */}
