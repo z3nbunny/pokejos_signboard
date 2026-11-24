@@ -76,7 +76,8 @@ export default function MerchCarousel({ isFeature, activeLocation }) {
                         className={`${isFeature ? 'w-[48%]' : 'w-[32%]'} h-full flex flex-col relative overflow-hidden rounded-[1vw] border border-black/10 shrink-0 bg-black`}
                     >
                         {/* 1. The Image Wrapper: Now flexes to take ONLY the remaining space */}
-                        <div className="flex-1 w-full bg-white relative">
+
+                        <div className="flex-1 min-h-0 w-full bg-white relative overflow-hidden">
 
                             <FramedImage
                                 src={slide.imageUrl || slide.image}
